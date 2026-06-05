@@ -45,6 +45,7 @@
         </div>
     </h2>
     
+    <!-- CARD ENTRY ROW -->
     <div class="inventory-row">
         <input type="text" id="input-ref" placeholder="Ref / SKU" style="width: 100px;">
         
@@ -63,6 +64,7 @@
         <button class="btn-cancel" id="cancel-edit-btn" onclick="cancelEdit()">Cancel Edit</button>
     </div>
 
+    <!-- FILTER ROW -->
     <div class="filter-section">
         <strong>Filter Inventory:</strong>
         <input type="text" id="filter-text" placeholder="Search Card Name, Ref, or Code..." style="flex: 1;">
@@ -72,6 +74,7 @@
         <button class="btn-clear-filters" onclick="clearFilters()">Clear Filters</button>
     </div>
 
+    <!-- INVENTORY TABLE -->
     <table id="inventory-table">
         <thead>
             <tr>
@@ -89,7 +92,7 @@
 </div>
 
 <script>
-    // Complete 81-Set Multilingual Dataset
+    // Complete 83-Set Multilingual Dataset
     const database = [
         { id: "CRI", text: "Chaos Rising (EN: CRI)" }, { id: "M4", text: "Ninja Spinner (JP: M4)" }, { id: "CM4", text: "Ninja Spinner (CH: CM4)" }, { id: "KM4", text: "Ninja Spinner (KR: KM4)" },
         { id: "PFO", text: "Perfect Order (EN: PFO)" }, { id: "M3", text: "Nihil Zero (JP: M3)" }, { id: "CM3", text: "Nihil Zero (CH: CM3)" }, { id: "KM3", text: "Nihil Zero (KR: KM3)" },
@@ -121,12 +124,10 @@
     const filterSetDropdown = document.getElementById('filter-set');
     
     database.forEach(item => {
-        // Add to main entry datalist
         let option1 = document.createElement('option');
         option1.value = item.text;
         setDatalist.appendChild(option1);
 
-        // Add to filter dropdown
         let option2 = document.createElement('option');
         option2.value = item.text;
         option2.innerText = item.text;
@@ -152,9 +153,9 @@
             const matchesSet = setFilter === "" || set === setFilter;
             
             if (matchesText && matchesSet) {
-                row.style.display = ""; // Show
+                row.style.display = ""; 
             } else {
-                row.style.display = "none"; // Hide
+                row.style.display = "none"; 
             }
         });
     }
@@ -162,15 +163,13 @@
     function clearFilters() {
         document.getElementById('filter-text').value = '';
         document.getElementById('filter-set').value = '';
-        applyFilters(); // Re-run to show all
+        applyFilters(); 
     }
 
-    // Attach listeners to filter inputs
     document.getElementById('filter-text').addEventListener('input', applyFilters);
     document.getElementById('filter-set').addEventListener('change', applyFilters);
 
-
-    // --- API FETCH LOGIC ---
+    // --- API FETCH LOGIC & FIREWALL ---
     document.getElementById('input-set').addEventListener('input', function() {
         const typedValue = this.value;
         const matchedItem = database.find(item => item.text === typedValue);
@@ -179,25 +178,40 @@
         
         if (matchedItem) {
             document.getElementById('input-code').value = matchedItem.id;
-            cardDatalist.innerHTML = '<option value="Loading...">';
             
-            const baseName = matchedItem.text.split(" (")[0];
+            // 1. INSTANT NUMBER GENERATOR (Guaranteed 1 to 300)
+            cardDatalist.innerHTML = '';
+            for (let i = 1; i <= 300; i++) {
+                let numStr = String(i).padStart(3, '0');
+                let option = document.createElement('option');
+                option.value = numStr; 
+                cardDatalist.appendChild(option);
+            }
+            nameInput.placeholder = "2. Type No. (e.g. 025)...";
             
-            fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:"${baseName}"&pageSize=300`)
-                .then(r => r.json())
-                .then(d => {
-                    cardDatalist.innerHTML = '';
-                    if (d.data && d.data.length > 0) {
-                        d.data.sort((a,b) => a.number - b.number).forEach(card => {
-                            let option = document.createElement('option');
-                            option.value = `${String(card.number).padStart(3, '0')} - ${card.name}`;
-                            cardDatalist.appendChild(option);
-                        });
-                    }
-                }).catch(() => cardDatalist.innerHTML = '');
+            // 2. THE FIREWALL: Only ask the API if it is an English set
+            const isEnglish = matchedItem.text.includes("(EN:");
+            
+            if (isEnglish) {
+                const baseName = matchedItem.text.split(" (")[0];
+                fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:"${baseName}"&pageSize=300`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.data && d.data.length > 0) {
+                            cardDatalist.innerHTML = ''; 
+                            d.data.sort((a,b) => a.number - b.number).forEach(card => {
+                                let option = document.createElement('option');
+                                option.value = `${String(card.number).padStart(3, '0')} - ${card.name}`;
+                                cardDatalist.appendChild(option);
+                            });
+                            nameInput.placeholder = "2. Type No. or Name...";
+                        }
+                    }).catch(() => {});
+            }
         } else {
             document.getElementById('input-code').value = ''; 
             cardDatalist.innerHTML = '';
+            nameInput.placeholder = "2. Type No. (e.g. 025)...";
         }
     });
 
@@ -218,7 +232,7 @@
             localStorage.setItem('pokemonInventory_backup', savedData);
             const inventoryData = JSON.parse(savedData);
             inventoryData.forEach(item => addRow(item.ref, item.set, item.code, item.name, item.loc, item.qty, false));
-            applyFilters(); // Apply filters immediately upon load just in case
+            applyFilters(); 
         }
     }
     document.addEventListener("DOMContentLoaded", loadFromLocalStorage);
@@ -237,7 +251,7 @@
         `;
         tbody.appendChild(tr);
         if (triggerSave) saveToLocalStorage();
-        applyFilters(); // Ensure the new row respects current filter settings
+        applyFilters(); 
     }
 
     function addFromUI() {
@@ -257,7 +271,7 @@
             
             cancelEdit();
             saveToLocalStorage();
-            applyFilters(); // Refresh filters after edit
+            applyFilters(); 
         } else {
             addRow(ref, set, code, name, loc, qty);
             clearInputs();
