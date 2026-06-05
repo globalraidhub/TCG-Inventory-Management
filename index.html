@@ -7,73 +7,98 @@
 
     <style>
         body { font-family: system-ui, sans-serif; padding: 40px; background-color: #f4f7f6; }
-        .container { max-width: 1250px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h2 { color: #2c3e50; margin-top: 0; display: flex; justify-content: space-between; align-items: center; }
+        .container { max-width: 1400px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        .action-buttons { display: flex; gap: 10px; }
-        .btn-upload { background-color: #8e44ad; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-download { background-color: #2980b9; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-audit { background-color: #f1c40f; color: #2c3e50; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-clear { background-color: #7f8c8d; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h2 { color: #2c3e50; margin: 0; }
+        .portfolio-value { background-color: #2c3e50; color: #2ecc71; padding: 10px 20px; border-radius: 8px; font-size: 24px; font-weight: bold; border: 2px solid #34495e; }
+
+        .action-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;}
+        .btn-upload { background-color: #8e44ad; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-download { background-color: #2980b9; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-audit { background-color: #f1c40f; color: #2c3e50; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-price { background-color: #2ecc71; color: #2c3e50; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; box-shadow: 0 0 10px rgba(46, 204, 113, 0.4); }
+        .btn-clear { background-color: #7f8c8d; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         
-        .inventory-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; margin-top: 20px; background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 8px;}
+        .inventory-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 8px;}
         input, select { height: 40px; border: 1px solid #ddd; border-radius: 6px; padding: 0 10px; box-sizing: border-box;}
         
         .btn-add { background-color: #27ae60; color: white; border: none; padding: 0 20px; height: 40px; border-radius: 6px; cursor: pointer; font-weight: bold;}
         .btn-add:hover { background-color: #219150; }
         .btn-cancel { background-color: #e74c3c; color: white; border: none; padding: 0 20px; height: 40px; border-radius: 6px; cursor: pointer; font-weight: bold; display: none; }
         
-        .filter-section { display: flex; gap: 10px; align-items: center; background-color: #e8f4f8; padding: 15px; border-radius: 8px; border: 1px solid #d1e5eb; margin-bottom: 10px; }
+        .filter-section { display: flex; gap: 8px; align-items: center; background-color: #e8f4f8; padding: 15px; border-radius: 8px; border: 1px solid #d1e5eb; margin-bottom: 10px; flex-wrap: wrap; }
+        .filter-input { flex: 1; min-width: 130px; }
         .btn-clear-filters { background-color: #95a5a6; color: white; border: none; padding: 0 15px; height: 40px; border-radius: 6px; cursor: pointer; font-weight: bold;}
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
         th, td { border-bottom: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background-color: #f8f9fa; }
+        .val-col { font-weight: bold; color: #27ae60; }
         .btn-edit { background-color: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px; }
         .btn-delete { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        
+        #loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; font-size: 24px; }
+        .spinner { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 20px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-text">Fetching Live Market Prices...</div>
+    <div style="font-size: 14px; margin-top: 10px; color: #ccc;">(Respecting API rate limits to safeguard data sync)</div>
+</div>
+
 <div class="container">
-    <h2>
-        Pokemon Inventory Management
-        <div class="action-buttons">
-            <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
-            <button class="btn-upload" onclick="document.getElementById('csv-file-input').click()">Upload CSV</button>
-            <button class="btn-download" onclick="downloadCSV()">Master Backup</button>
-            <button class="btn-audit" onclick="downloadEbayAudit()">eBay Audit Export</button>
-            <button class="btn-clear" onclick="clearAllData()">Wipe Data</button>
-        </div>
-    </h2>
+    <div class="header-section">
+        <h2>Pokemon Inventory Management</h2>
+        <div class="portfolio-value" id="total-portfolio-display">Total Value: $0.00</div>
+    </div>
     
+    <div class="action-buttons">
+        <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+        <button class="btn-upload" onclick="document.getElementById('csv-file-input').click()">Upload CSV</button>
+        <button class="btn-download" onclick="downloadCSV()">Master Backup</button>
+        <button class="btn-audit" onclick="downloadEbayAudit()">eBay Audit Export</button>
+        <button class="btn-price" onclick="refreshLivePrices()">🔄 Refresh Live Prices</button>
+        <button class="btn-clear" onclick="clearAllData()">Wipe Data</button>
+    </div>
+    
+    <!-- CARD ENTRY ROW -->
     <div class="inventory-row">
         <input type="text" id="input-ref" placeholder="Ref / SKU" style="width: 100px;">
         
-        <input list="set-options" id="input-set" placeholder="1. Type Set Name..." style="width: 250px;">
+        <input list="set-options" id="input-set" placeholder="1. Type Set Name..." style="width: 230px;">
         <datalist id="set-options"></datalist>
         
         <input type="text" id="input-code" placeholder="Code" style="width: 70px;">
 
-        <input list="card-options" type="text" id="input-name" placeholder="2. Type No. (e.g. 025)..." style="width: 250px;">
+        <input list="card-options" type="text" id="input-name" placeholder="2. Type No. (e.g. 203/193)..." style="width: 250px;">
         <datalist id="card-options"></datalist>
         
-        <input type="text" id="input-location" placeholder="Location" style="width: 100px;">
+        <input type="text" id="input-location" placeholder="Loc" style="width: 80px;">
         <input type="number" id="input-qty" value="1" style="width: 60px;" min="1">
         
         <button class="btn-add" id="main-action-btn" onclick="addFromUI()">Add to Stock</button>
         <button class="btn-cancel" id="cancel-edit-btn" onclick="cancelEdit()">Cancel Edit</button>
     </div>
 
+    <!-- TARGETED COLUMN FILTERS (image_7019a1.png Layout) -->
     <div class="filter-section">
-        <strong>Filter Inventory:</strong>
-        <input type="text" id="filter-text" placeholder="Search Card Name, Ref, or Code..." style="flex: 1;">
-        <select id="filter-set" style="width: 250px;">
+        <strong>Filters:</strong>
+        <input type="text" id="filter-ref" class="filter-input" placeholder="🔍 Ref / SKU">
+        <select id="filter-set" style="width: 230px;">
             <option value="">All Sets (No Filter)</option>
         </select>
+        <input type="text" id="filter-code" class="filter-input" placeholder="🔍 Code" style="max-width: 100px;">
+        <input type="text" id="filter-name" class="filter-input" placeholder="🔍 No. & Card Name">
+        <input type="text" id="filter-loc" class="filter-input" placeholder="🔍 Location" style="max-width: 120px;">
         <button class="btn-clear-filters" onclick="clearFilters()">Clear Filters</button>
     </div>
 
+    <!-- INVENTORY TABLE -->
     <table id="inventory-table">
         <thead>
             <tr>
@@ -83,6 +108,8 @@
                 <th>No. & Card Name</th>
                 <th>Location</th>
                 <th>Qty</th>
+                <th>Unit Val ($)</th>
+                <th>Total Val ($)</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -136,53 +163,56 @@
 
     // --- KEYBOARD SHORTCUTS ---
     document.getElementById('input-location').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault(); 
-            addFromUI();
-        }
+        if (e.key === 'Enter') { e.preventDefault(); addFromUI(); }
     });
-
     document.getElementById('input-qty').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault(); 
-            addFromUI();
-        }
+        if (e.key === 'Enter') { e.preventDefault(); addFromUI(); }
     });
 
-    // --- FILTERING LOGIC ---
+    // --- GRANULAR FILTERING LOGIC (image_7019a1.png Columns) ---
     function applyFilters() {
-        const searchText = document.getElementById('filter-text').value.toLowerCase();
+        const refFilter = document.getElementById('filter-ref').value.toLowerCase();
         const setFilter = document.getElementById('filter-set').value;
+        const codeFilter = document.getElementById('filter-code').value.toLowerCase();
+        const nameFilter = document.getElementById('filter-name').value.toLowerCase();
+        const locFilter = document.getElementById('filter-loc').value.toLowerCase();
+        
         const rows = document.querySelectorAll("#inventory-table tbody tr");
 
         rows.forEach(row => {
             const cells = row.querySelectorAll("td");
-            if (cells.length < 6) return;
+            if (cells.length < 8) return;
             
-            const ref = cells[0].innerText.toLowerCase();
-            const set = cells[1].innerText;
-            const code = cells[2].innerText.toLowerCase();
-            const name = cells[3].innerText.toLowerCase();
+            const rowRef = cells[0].innerText.toLowerCase();
+            const rowSet = cells[1].innerText;
+            const rowCode = cells[2].innerText.toLowerCase();
+            const rowName = cells[3].innerText.toLowerCase();
+            const rowLoc = cells[4].innerText.toLowerCase();
             
-            const matchesText = searchText === "" || name.includes(searchText) || ref.includes(searchText) || code.includes(searchText);
-            const matchesSet = setFilter === "" || set === setFilter;
+            const matchesRef = refFilter === "" || rowRef.includes(refFilter);
+            const matchesSet = setFilter === "" || rowSet === setFilter;
+            const matchesCode = codeFilter === "" || rowCode.includes(codeFilter);
+            const matchesName = nameFilter === "" || rowName.includes(nameFilter);
+            const matchesLoc = locFilter === "" || rowLoc.includes(locFilter);
             
-            if (matchesText && matchesSet) {
-                row.style.display = ""; 
-            } else {
-                row.style.display = "none"; 
-            }
+            row.style.display = (matchesRef && matchesSet && matchesCode && matchesName && matchesLoc) ? "" : "none";
         });
     }
 
     function clearFilters() {
-        document.getElementById('filter-text').value = '';
+        document.getElementById('filter-ref').value = '';
         document.getElementById('filter-set').value = '';
+        document.getElementById('filter-code').value = '';
+        document.getElementById('filter-name').value = '';
+        document.getElementById('filter-loc').value = '';
         applyFilters(); 
     }
 
-    document.getElementById('filter-text').addEventListener('input', applyFilters);
+    document.getElementById('filter-ref').addEventListener('input', applyFilters);
     document.getElementById('filter-set').addEventListener('change', applyFilters);
+    document.getElementById('filter-code').addEventListener('input', applyFilters);
+    document.getElementById('filter-name').addEventListener('input', applyFilters);
+    document.getElementById('filter-loc').addEventListener('input', applyFilters);
 
     // --- API FETCH LOGIC & FIREWALL ---
     document.getElementById('input-set').addEventListener('input', function() {
@@ -194,7 +224,6 @@
         if (matchedItem) {
             document.getElementById('input-code').value = matchedItem.id;
             
-            // INSTANT NUMBER GENERATOR
             cardDatalist.innerHTML = '';
             for (let i = 1; i <= 300; i++) {
                 let numStr = String(i).padStart(3, '0');
@@ -202,21 +231,26 @@
                 option.value = numStr; 
                 cardDatalist.appendChild(option);
             }
-            nameInput.placeholder = "2. Type No. (e.g. 025)...";
+            nameInput.placeholder = "2. Type No. (e.g. 203/193)...";
             
-            // THE FIREWALL: Only ask API for English sets
             const isEnglish = matchedItem.text.includes("(EN:");
             
             if (isEnglish) {
                 const baseName = matchedItem.text.split(" (")[0];
-                fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:"${baseName}"&pageSize=300`)
+                fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:"${baseName}"&pageSize=300&select=name,number,set`)
                     .then(r => r.json())
                     .then(d => {
                         if (d.data && d.data.length > 0) {
                             cardDatalist.innerHTML = ''; 
-                            d.data.sort((a,b) => a.number - b.number).forEach(card => {
+                            
+                            // Advanced alphanumeric custom sorting
+                            d.data.sort((a,b) => String(a.number).localeCompare(String(b.number), undefined, {numeric: true, sensitivity: 'base'}));
+                            
+                            d.data.forEach(card => {
                                 let option = document.createElement('option');
-                                option.value = `${String(card.number).padStart(3, '0')} - ${card.name}`;
+                                const total = card.set && card.set.printedTotal ? card.set.printedTotal : "";
+                                const displayNum = total ? `${card.number}/${total}` : card.number;
+                                option.value = `${displayNum} - ${card.name}`;
                                 cardDatalist.appendChild(option);
                             });
                             nameInput.placeholder = "2. Type No. or Name...";
@@ -226,9 +260,72 @@
         } else {
             document.getElementById('input-code').value = ''; 
             cardDatalist.innerHTML = '';
-            nameInput.placeholder = "2. Type No. (e.g. 025)...";
+            nameInput.placeholder = "2. Type No. (e.g. 203/193)...";
         }
     });
+
+    // --- LIVE MARKET SCANNER ---
+    async function refreshLivePrices() {
+        const rows = Array.from(document.querySelectorAll("#inventory-table tbody tr"));
+        if (rows.length === 0) return alert("Your inventory is empty!");
+
+        document.getElementById('loading-overlay').style.display = "flex";
+        const uniqueSets = [...new Set(rows.map(row => row.cells[1].innerText).filter(set => set.includes("(EN:")))];
+
+        for (const fullSetName of uniqueSets) {
+            const baseName = fullSetName.split(" (")[0];
+            document.getElementById('loading-text').innerText = `Scanning: ${baseName}...`;
+            
+            try {
+                const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:"${baseName}"&pageSize=300&select=number,tcgplayer`);
+                const data = await response.json();
+                
+                if(data.data) {
+                    rows.forEach(row => {
+                        if (row.cells[1].innerText === fullSetName) {
+                            const cardDetails = row.cells[3].innerText; 
+                            const cardNumRaw = cardDetails.split(" ")[0]; // Safely isolates "203/193" or "203"
+                            const cardNumStr = cardNumRaw.split("/")[0].replace(/^0+/, ''); // Converts "203/193" to API-matching "203"
+                            
+                            const apiCard = data.data.find(c => String(c.number) === cardNumStr);
+                            
+                            let unitPrice = 0.00;
+                            if (apiCard && apiCard.tcgplayer && apiCard.tcgplayer.prices) {
+                                const p = apiCard.tcgplayer.prices;
+                                if (p.normal && p.normal.market) unitPrice = p.normal.market;
+                                else if (p.holofoil && p.holofoil.market) unitPrice = p.holofoil.market;
+                                else if (p.reverseHolofoil && p.reverseHolofoil.market) unitPrice = p.reverseHolofoil.market;
+                            }
+                            
+                            const qty = parseInt(row.cells[5].innerText) || 1;
+                            const lineTotal = unitPrice * qty;
+                            
+                            row.cells[6].innerText = unitPrice > 0 ? unitPrice.toFixed(2) : "0.00";
+                            row.cells[7].innerText = lineTotal > 0 ? lineTotal.toFixed(2) : "0.00";
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to fetch price for", baseName);
+            }
+            await new Promise(resolve => setTimeout(resolve, 800)); 
+        }
+        
+        recalculateTotal();
+        saveToLocalStorage();
+        document.getElementById('loading-overlay').style.display = "none";
+        alert("Pricing update complete!");
+    }
+
+    function recalculateTotal() {
+        const rows = document.querySelectorAll("#inventory-table tbody tr");
+        let total = 0;
+        rows.forEach(row => {
+            const lineVal = parseFloat(row.cells[7].innerText) || 0;
+            total += lineVal;
+        });
+        document.getElementById('total-portfolio-display').innerText = `Total Value: $${total.toFixed(2)}`;
+    }
 
     // --- SECURE DATA STORAGE ---
     function saveToLocalStorage() {
@@ -236,9 +333,14 @@
         const rows = document.querySelectorAll("#inventory-table tbody tr");
         rows.forEach(row => {
             const cells = row.querySelectorAll("td");
-            inventoryData.push({ ref: cells[0].innerText, set: cells[1].innerText, code: cells[2].innerText, name: cells[3].innerText, loc: cells[4].innerText, qty: cells[5].innerText });
+            inventoryData.push({ 
+                ref: cells[0].innerText, set: cells[1].innerText, code: cells[2].innerText, 
+                name: cells[3].innerText, loc: cells[4].innerText, qty: cells[5].innerText,
+                uPrice: cells[6] ? cells[6].innerText : "0.00", tPrice: cells[7] ? cells[7].innerText : "0.00"
+            });
         });
         localStorage.setItem('pokemonInventory', JSON.stringify(inventoryData));
+        recalculateTotal();
     }
 
     function loadFromLocalStorage() {
@@ -246,19 +348,22 @@
         if (savedData) {
             localStorage.setItem('pokemonInventory_backup', savedData);
             const inventoryData = JSON.parse(savedData);
-            inventoryData.forEach(item => addRow(item.ref, item.set, item.code, item.name, item.loc, item.qty, false));
+            inventoryData.forEach(item => addRow(item.ref, item.set, item.code, item.name, item.loc, item.qty, item.uPrice || "0.00", item.tPrice || "0.00", false));
             applyFilters(); 
+            recalculateTotal();
         }
     }
     document.addEventListener("DOMContentLoaded", loadFromLocalStorage);
 
     // --- SECURE ADD & EDIT FUNCTIONS ---
-    function addRow(ref, set, code, name, loc, qty, triggerSave = true) {
+    function addRow(ref, set, code, name, loc, qty, uPrice = "0.00", tPrice = "0.00", triggerSave = true) {
         const tbody = document.querySelector("#inventory-table tbody");
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
             <td>${ref}</td><td>${set}</td><td>${code}</td><td>${name}</td><td>${loc}</td><td>${qty}</td>
+            <div style="display:none;"></div>
+            <td class="val-col">${uPrice}</td><td class="val-col">${tPrice}</td>
             <td>
                 <button class="btn-edit" onclick="editRow(this)">Edit</button>
                 <button class="btn-delete" onclick="deleteRow(this)">Del</button>
@@ -275,32 +380,32 @@
         const code = document.getElementById('input-code').value;
         const name = document.getElementById('input-name').value;
         const loc = document.getElementById('input-location').value;
-        const qty = document.getElementById('input-qty').value;
+        const qty = parseInt(document.getElementById('input-qty').value) || 1;
 
         if (!name || !set) { alert("Please specify the Set and Card Name/Number."); return; }
 
-        // ANTI-DUPLICATE SKU CHECK
         if (ref !== "") {
             const rows = document.querySelectorAll("#inventory-table tbody tr");
             for (let row of rows) {
-                if (row === rowBeingEdited) continue; // Ignore the row currently being edited
-                
+                if (row === rowBeingEdited) continue; 
                 const cells = row.querySelectorAll("td");
                 if (cells[0].innerText === ref) {
                     if (rowBeingEdited) {
-                        alert(`Cannot save: The Ref / SKU "${ref}" is already assigned to another card in your inventory.`);
-                        return; // Prevent saving the edit
+                        alert(`Cannot save: The Ref / SKU "${ref}" is already assigned to another card.`);
+                        return; 
                     } else {
-                        // Auto-merge quantity
                         const currentQty = parseInt(cells[5].innerText) || 0;
                         const addedQty = parseInt(qty) || 1;
                         cells[5].innerText = currentQty + addedQty;
+                        
+                        const unitPrice = parseFloat(cells[6].innerText) || 0;
+                        cells[7].innerText = (unitPrice * (currentQty + addedQty)).toFixed(2);
                         
                         alert(`Ref / SKU "${ref}" already exists! The quantity has been increased by ${addedQty}.`);
                         clearInputs();
                         saveToLocalStorage();
                         applyFilters();
-                        return; // Stop execution, do not add a new row
+                        return; 
                     }
                 }
             }
@@ -311,11 +416,14 @@
             cells[0].innerText = ref; cells[1].innerText = set; cells[2].innerText = code;
             cells[3].innerText = name; cells[4].innerText = loc; cells[5].innerText = qty;
             
+            const unitP = parseFloat(cells[6].innerText) || 0;
+            cells[7].innerText = (unitP * qty).toFixed(2);
+            
             cancelEdit();
             saveToLocalStorage();
             applyFilters(); 
         } else {
-            addRow(ref, set, code, name, loc, qty);
+            addRow(ref, set, code, name, loc, qty, "0.00", "0.00");
             clearInputs();
         }
     }
@@ -337,6 +445,14 @@
         document.getElementById('cancel-edit-btn').style.display = "inline-block";
     }
 
+    document.getElementById('input-set').addEventListener('blur', function() {
+        const typedValue = this.value;
+        const matchedItem = database.find(item => item.text === typedValue);
+        if (matchedItem) {
+            document.getElementById('input-code').value = matchedItem.id;
+        }
+    });
+
     function cancelEdit() {
         rowBeingEdited = null;
         const addBtn = document.getElementById('main-action-btn');
@@ -351,12 +467,9 @@
         document.getElementById('input-code').value = ''; document.getElementById('input-name').value = '';
         document.getElementById('input-location').value = ''; document.getElementById('input-qty').value = 1; 
         document.getElementById('card-options').innerHTML = ''; 
-        
-        // Put the cursor back to the first box ready for the next entry
         document.getElementById('input-ref').focus();
     }
 
-    // --- SECURE DELETE FUNCTIONS ---
     function deleteRow(btn) { 
         const row = btn.closest("tr");
         const cardName = row.querySelectorAll("td")[3].innerText; 
@@ -369,19 +482,15 @@
 
     function clearAllData() {
         const securityCheck = prompt("WARNING: This will permanently wipe all data from your table.\n\nTo proceed, please type the word DELETE in the box below:");
-        
         if(securityCheck === "DELETE") {
             document.querySelector("#inventory-table tbody").innerHTML = '';
             localStorage.removeItem('pokemonInventory');
+            recalculateTotal();
             alert("All data has been successfully deleted.");
-        } else if (securityCheck !== null) {
-            alert("Wipe cancelled. Your data is perfectly safe.");
         }
     }
 
     // --- CSV FUNCTIONS ---
-    
-    // Master Backup Export
     function downloadCSV() {
         let csvData = [];
         document.querySelectorAll("#inventory-table tr").forEach(row => {
@@ -396,27 +505,19 @@
         link.click();
     }
     
-    // eBay Audit Export
     function downloadEbayAudit() {
         let csvData = [];
-        
-        // Setup eBay-specific headers
         csvData.push('"Custom Label (SKU)","Card Name","Set","Quantity"');
-
-        // Extract specific columns for active inventory
         document.querySelectorAll("#inventory-table tbody tr").forEach(row => {
             let cells = row.querySelectorAll("td");
             if(cells.length > 0) {
-                // Formatting specifically to match eBay active listing reports
                 let sku = '"' + cells[0].innerText.replace(/"/g, '""') + '"';
                 let set = '"' + cells[1].innerText.replace(/"/g, '""') + '"';
                 let name = '"' + cells[3].innerText.replace(/"/g, '""') + '"';
                 let qty = '"' + cells[5].innerText.replace(/"/g, '""') + '"';
-                
                 csvData.push([sku, name, set, qty].join(","));
             }
         });
-
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([csvData.join("\n")], { type: "text/csv" }));
         link.download = "eBay_Audit_List.csv";
@@ -428,7 +529,11 @@
         Papa.parse(e.target.files[0], {
             header: true, skipEmptyLines: true,
             complete: function(results) {
-                results.data.forEach(row => addRow(row["Ref / SKU"] || "", row["Set"] || "", row["Code"] || "", row["No. & Card Name"] || row["Card Name & No."] || "", row["Location"] || "", row["Qty"] || "1", false));
+                results.data.forEach(row => {
+                    let uPrice = row["Unit Val ($)"] || row["Unit Price"] || "0.00";
+                    let tPrice = row["Total Val ($)"] || row["Total Price"] || "0.00";
+                    addRow(row["Ref / SKU"] || "", row["Set"] || "", row["Code"] || "", row["No. & Card Name"] || row["Card Name & No."] || "", row["Location"] || "", row["Qty"] || "1", uPrice, tPrice, false);
+                });
                 saveToLocalStorage(); 
                 applyFilters();
             }
