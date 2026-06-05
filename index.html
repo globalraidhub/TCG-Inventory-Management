@@ -20,6 +20,7 @@
         
         .btn-add { background-color: #27ae60; color: white; border: none; padding: 0 20px; height: 40px; border-radius: 6px; cursor: pointer; font-weight: bold;}
         .btn-add:hover { background-color: #219150; }
+        .btn-cancel { background-color: #e74c3c; color: white; border: none; padding: 0 20px; height: 40px; border-radius: 6px; cursor: pointer; font-weight: bold; display: none; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
         th, td { border-bottom: 1px solid #ddd; padding: 12px; text-align: left; }
@@ -55,7 +56,8 @@
         <input type="text" id="input-location" placeholder="Location" style="width: 100px;">
         <input type="number" id="input-qty" value="1" style="width: 60px;" min="1">
         
-        <button class="btn-add" onclick="addFromUI()">Add to Stock</button>
+        <button class="btn-add" id="main-action-btn" onclick="addFromUI()">Add to Stock</button>
+        <button class="btn-cancel" id="cancel-edit-btn" onclick="cancelEdit()">Cancel Edit</button>
     </div>
 
     <table id="inventory-table">
@@ -81,7 +83,8 @@
         { id: "SM1", text: "Collection Sun / Moon (JP: SM1)" }, { id: "CSM1", text: "Collection Sun / Moon (CH: CSM1)" }, { id: "KSM1", text: "Collection Sun / Moon (KR: KSM1)" }, { id: "SM1+", text: "Strengthening Expansion Pack (JP: SM1+)" }, { id: "CSM1+", text: "Strengthening Expansion Pack (CH: CSM1+)" }, { id: "KSM1+", text: "Strengthening Expansion Pack (KR: KSM1+)" }, { id: "SM2", text: "Alolan Moonlight / Facing a New Trial (JP: SM2)" }, { id: "CSM2", text: "Alolan Moonlight / Facing a New Trial (CH: CSM2)" }, { id: "KSM2", text: "Alolan Moonlight / Facing a New Trial (KR: KSM2)" }, { id: "SM2+", text: "To Have and to Hold (JP: SM2+)" }, { id: "CSM2+", text: "To Have and to Hold (CH: CSM2+)" }, { id: "KSM2+", text: "To Have and to Hold (KR: KSM2+)" }, { id: "SM3", text: "Did You See the Fighting Rainbow? / Light-Consuming Darkness (JP: SM3)" }, { id: "CSM3", text: "Did You See the Fighting Rainbow? / Light-Consuming Darkness (CH: CSM3)" }, { id: "KSM3", text: "Did You See the Fighting Rainbow? / Light-Consuming Darkness (KR: KSM3)" }, { id: "SM3+", text: "Shining Legends (JP: SM3+)" }, { id: "CSM3+", text: "Shining Legends (CH: CSM3+)" }, { id: "KSM3+", text: "Shining Legends (KR: KSM3+)" }, { id: "SM4", text: "Awakened Heroes / Ultradimensional Beasts (JP: SM4)" }, { id: "CSM4", text: "Awakened Heroes / Ultradimensional Beasts (CH: CSM4)" }, { id: "KSM4", text: "Awakened Heroes / Ultradimensional Beasts (KR: KSM4)" }, { id: "SM4+", text: "GX Battle Boost (JP: SM4+)" }, { id: "CSM4+", text: "GX Battle Boost (CH: CSM4+)" }, { id: "KSM4+", text: "GX Battle Boost (KR: KSM4+)" }, { id: "SM5", text: "Ultra Sun / Ultra Moon (JP: SM5)" }, { id: "CSM5", text: "Ultra Sun / Ultra Moon (CH: CSM5)" }, { id: "KSM5", text: "Ultra Sun / Ultra Moon (KR: KSM5)" }, { id: "SM5+", text: "Ultra Force (JP: SM5+)" }, { id: "CSM5+", text: "Ultra Force (CH: CSM5+)" }, { id: "KSM5+", text: "Ultra Force (KR: KSM5+)" }, { id: "SM6", text: "Forbidden Light (JP: SM6)" }, { id: "CSM6", text: "Forbidden Light (CH: CSM6)" }, { id: "KSM6", text: "Forbidden Light (KR: KSM6)" }, { id: "SM6a", text: "Champion Road (JP: SM6a)" }, { id: "CSM6a", text: "Champion Road (CH: CSM6a)" }, { id: "KSM6a", text: "Champion Road (KR: KSM6a)" }, { id: "SM7", text: "Charisma of the Wrecked Sky (JP: SM7)" }, { id: "CSM7", text: "Charisma of the Wrecked Sky (CH: CSM7)" }, { id: "KSM7", text: "Charisma of the Wrecked Sky (KR: KSM7)" }, { id: "SM7a", text: "Thunderclap Spark (JP: SM7a)" }, { id: "CSM7a", text: "Thunderclap Spark (CH: CSM7a)" }, { id: "KSM7a", text: "Thunderclap Spark (KR: KSM7a)" }, { id: "SM7b", text: "Fairy Rise (JP: SM7b)" }, { id: "CSM7b", text: "Fairy Rise (CH: CSM7b)" }, { id: "KSM7b", text: "Fairy Rise (KR: KSM7b)" }, { id: "SM8", text: "Super-Burst Impact (JP: SM8)" }, { id: "CSM8", text: "Super-Burst Impact (CH: CSM8)" }, { id: "KSM8", text: "Super-Burst Impact (KR: KSM8)" }, { id: "SM8a", text: "Dark Order (JP: SM8a)" }, { id: "CSM8a", text: "Dark Order (CH: CSM8a)" }, { id: "KSM8a", text: "Dark Order (KR: KSM8a)" }, { id: "SM8b", text: "GX Ultra Shiny (JP: SM8b)" }, { id: "CSM8b", text: "GX Ultra Shiny (CH: CSM8b)" }, { id: "KSM8b", text: "GX Ultra Shiny (KR: KSM8b)" }, { id: "SM9", text: "Tag Bolt (JP: SM9)" }, { id: "CSM9", text: "Tag Bolt (CH: CSM9)" }, { id: "KSM9", text: "Tag Bolt (KR: KSM9)" }, { id: "SM9a", text: "Night Unison (JP: SM9a)" }, { id: "CSM9a", text: "Night Unison (CH: CSM9a)" }, { id: "KSM9a", text: "Night Unison (KR: KSM9a)" }, { id: "SM9b", text: "Full Metal Wall (JP: SM9b)" }, { id: "CSM9b", text: "Full Metal Wall (CH: CSM9b)" }, { id: "KSM9b", text: "Full Metal Wall (KR: KSM9b)" }, { id: "SM10", text: "Double Blaze (JP: SM10)" }, { id: "CSM10", text: "Double Blaze (CH: CSM10)" }, { id: "KSM10", text: "Double Blaze (KR: KSM10)" }, { id: "SM10a", text: "GG End (JP: SM10a)" }, { id: "CSM10a", text: "GG End (CH: CSM10a)" }, { id: "KSM10a", text: "GG End (KR: KSM10a)" }, { id: "SM10b", text: "Sky Legend (JP: SM10b)" }, { id: "CSM10b", text: "Sky Legend (CH: CSM10b)" }, { id: "KSM10b", text: "Sky Legend (KR: KSM10b)" }, { id: "SM11", text: "Miracle Twin (JP: SM11)" }, { id: "CSM11", text: "Miracle Twin (CH: CSM11)" }, { id: "KSM11", text: "Miracle Twin (KR: KSM11)" }, { id: "SM11a", text: "Remix Bout (JP: SM11a)" }, { id: "CSM11a", text: "Remix Bout (CH: CSM11a)" }, { id: "KSM11a", text: "Remix Bout (KR: KSM11a)" }, { id: "SM11b", text: "Dream League (JP: SM11b)" }, { id: "CSM11b", text: "Dream League (CH: CSM11b)" }, { id: "KSM11b", text: "Dream League (KR: KSM11b)" }, { id: "SM12", text: "Alter Genesis (JP: SM12)" }, { id: "CSM12", text: "Alter Genesis (CH: CSM12)" }, { id: "KSM12", text: "Alter Genesis (KR: KSM12)" }, { id: "SM12a", text: "Tag All Stars (JP: SM12a)" }, { id: "CSM12a", text: "Tag All Stars (CH: CSM12a)" }, { id: "KSM12a", text: "Tag All Stars (KR: KSM12a)" }, { id: "S1", text: "Sword / Shield (JP: S1)" }, { id: "CS1", text: "Sword / Shield (CH: CS1)" }, { id: "KS1", text: "Sword / Shield (KR: KS1)" }, { id: "S1a", text: "VMAX Rising (JP: S1a)" }, { id: "CS1a", text: "VMAX Rising (CH: CS1a)" }, { id: "KS1a", text: "VMAX Rising (KR: KS1a)" }, { id: "S2", text: "Rebellion Crash (JP: S2)" }, { id: "CS2", text: "Rebellion Crash (CH: CS2)" }, { id: "KS2", text: "Rebellion Crash (KR: KS2)" }, { id: "S3", text: "Infinity Zone (JP: S3)" }, { id: "CS3", text: "Infinity Zone (CH: CS3)" }, { id: "KS3", text: "Infinity Zone (KR: KS3)" }, { id: "S3a", text: "Legendary Heartbeat (JP: S3a)" }, { id: "CS3a", text: "Legendary Heartbeat (CH: CS3a)" }, { id: "KS3a", text: "Legendary Heartbeat (KR: KS3a)" }, { id: "S4", text: "Astonishing Volt Tackle (JP: S4)" }, { id: "CS4", text: "Astonishing Volt Tackle (CH: CS4)" }, { id: "KS4", text: "Astonishing Volt Tackle (KR: KS4)" }, { id: "S4a", text: "Shiny Star V (JP: S4a)" }, { id: "CS4a", text: "Shiny Star V (CH: CS4a)" }, { id: "KS4a", text: "Shiny Star V (KR: KS4a)" }, { id: "S5", text: "Single Strike / Rapid Strike Master (JP: S5)" }, { id: "CS5", text: "Single Strike / Rapid Strike Master (CH: CS5)" }, { id: "KS5", text: "Single Strike / Rapid Strike Master (KR: KS5)" }, { id: "S5a", text: "Peerless Fighters (JP: S5a)" }, { id: "CS5a", text: "Peerless Fighters (CH: CS5a)" }, { id: "KS5a", text: "Peerless Fighters (KR: KS5a)" }, { id: "S6", text: "Silver Lance / Jet-Black Spirit (JP: S6)" }, { id: "CS6", text: "Silver Lance / Jet-Black Spirit (CH: CS6)" }, { id: "KS6", text: "Silver Lance / Jet-Black Spirit (KR: KS6)" }, { id: "S6a", text: "Eevee Heroes (JP: S6a)" }, { id: "CS6a", text: "Eevee Heroes (CH: CS6a)" }, { id: "KS6a", text: "Eevee Heroes (KR: KS6a)" }, { id: "S7", text: "Skyscraping Perfection / Blue Sky Stream (JP: S7)" }, { id: "CS7", text: "Skyscraping Perfection / Blue Sky Stream (CH: CS7)" }, { id: "KS7", text: "Skyscraping Perfection / Blue Sky Stream (KR: KS7)" }, { id: "S8", text: "Fusion Arts (JP: S8)" }, { id: "CS8", text: "Fusion Arts (CH: CS8)" }, { id: "KS8", text: "Fusion Arts (KR: KS8)" }, { id: "S8a", text: "25th Anniversary Collection (JP: S8a)" }, { id: "CS8a", text: "25th Anniversary Collection (CH: CS8a)" }, { id: "KS8a", text: "25th Anniversary Collection (KR: KS8a)" }, { id: "S8b", text: "VMAX Climax (JP: S8b)" }, { id: "CS8b", text: "VMAX Climax (CH: CS8b)" }, { id: "KS8b", text: "VMAX Climax (KR: KS8b)" }, { id: "S9", text: "Star Birth (JP: S9)" }, { id: "CS9", text: "Star Birth (CH: CS9)" }, { id: "KS9", text: "Star Birth (KR: KS9)" }, { id: "S9a", text: "Battle Region (JP: S9a)" }, { id: "CS9a", text: "Battle Region (CH: CS9a)" }, { id: "KS9a", text: "Battle Region (KR: KS9a)" }, { id: "S10", text: "Time Gazer / Space Juggler (JP: S10)" }, { id: "CS10", text: "Time Gazer / Space Juggler (CH: CS10)" }, { id: "KS10", text: "Time Gazer / Space Juggler (KR: KS10)" }, { id: "S10a", text: "Dark Phantasma (JP: S10a)" }, { id: "CS10a", text: "Dark Phantasma (CH: CS10a)" }, { id: "KS10a", text: "Dark Phantasma (KR: KS10a)" }, { id: "S11", text: "Lost Abyss (JP: S11)" }, { id: "CS11", text: "Lost Abyss (CH: CS11)" }, { id: "KS11", text: "Lost Abyss (KR: KS11)" }, { id: "S11a", text: "Incandescent Arcana (JP: S11a)" }, { id: "CS11a", text: "Incandescent Arcana (CH: CS11a)" }, { id: "KS11a", text: "Incandescent Arcana (KR: KS11a)" }, { id: "S12", text: "Paradigm Trigger (JP: S12)" }, { id: "CS12", text: "Paradigm Trigger (CH: CS12)" }, { id: "KS12", text: "Paradigm Trigger (KR: KS12)" }, { id: "S12a", text: "VSTAR Universe (JP: S12a)" }, { id: "CS12a", text: "VSTAR Universe (CH: CS12a)" }, { id: "KS12a", text: "VSTAR Universe (KR: KS12a)" }, { id: "SV1", text: "Scarlet ex / Violet ex (JP: SV1)" }, { id: "CSV1", text: "Scarlet ex / Violet ex (CH: CSV1)" }, { id: "KSV1", text: "Scarlet ex / Violet ex (KR: KSV1)" }, { id: "SV1a", text: "Triplet Beat (JP: SV1a)" }, { id: "CSV1a", text: "Triplet Beat (CH: CSV1a)" }, { id: "KSV1a", text: "Triplet Beat (KR: KSV1a)" }, { id: "SV2", text: "Snow Hazard / Clay Burst (JP: SV2)" }, { id: "CSV2", text: "Snow Hazard / Clay Burst (CH: CSV2)" }, { id: "KSV2", text: "Snow Hazard / Clay Burst (KR: KSV2)" }, { id: "SV2a", text: "Pokemon Card 151 (JP: SV2a)" }, { id: "CSV2a", text: "Pokemon Card 151 (CH: CSV2a)" }, { id: "KSV2a", text: "Pokemon Card 151 (KR: KSV2a)" }, { id: "SV3", text: "Ruler of the Black Flame (JP: SV3)" }, { id: "CSV3", text: "Ruler of the Black Flame (CH: CSV3)" }, { id: "KSV3", text: "Ruler of the Black Flame (KR: KSV3)" }, { id: "SV3a", text: "Raging Surf (JP: SV3a)" }, { id: "CSV3a", text: "Raging Surf (CH: CSV3a)" }, { id: "KSV3a", text: "Raging Surf (KR: KSV3a)" }, { id: "SV4", text: "Ancient Roar / Future Flash (JP: SV4)" }, { id: "CSV4", text: "Ancient Roar / Future Flash (CH: CSV4)" }, { id: "KSV4", text: "Ancient Roar / Future Flash (KR: KSV4)" }, { id: "SV4a", text: "Shiny Treasure ex (JP: SV4a)" }, { id: "CSV4a", text: "Shiny Treasure ex (CH: CSV4a)" }, { id: "KSV4a", text: "Shiny Treasure ex (KR: KSV4a)" }, { id: "SV5", text: "Wild Force / Cyber Judge (JP: SV5)" }, { id: "CSV5", text: "Wild Force / Cyber Judge (CH: CSV5)" }, { id: "KSV5", text: "Wild Force / Cyber Judge (KR: KSV5)" }, { id: "SV5a", text: "Crimson Haze (JP: SV5a)" }, { id: "CSV5a", text: "Crimson Haze (CH: CSV5a)" }, { id: "KSV5a", text: "Crimson Haze (KR: KSV5a)" }, { id: "SV6", text: "Mask of Change (JP: SV6)" }, { id: "CSV6", text: "Mask of Change (CH: CSV6)" }, { id: "KSV6", text: "Mask of Change (KR: KSV6)" }, { id: "SV6a", text: "Night Wanderer (JP: SV6a)" }, { id: "CSV6a", text: "Night Wanderer (CH: CSV6a)" }, { id: "KSV6a", text: "Night Wanderer (KR: KSV6a)" }, { id: "SV7", text: "Stellar Miracle (JP: SV7)" }, { id: "CSV7", text: "Stellar Miracle (CH: CSV7)" }, { id: "KSV7", text: "Stellar Miracle (KR: KSV7)" }, { id: "SV7a", text: "Paradise Dragona (JP: SV7a)" }, { id: "CSV7a", text: "Paradise Dragona (CH: CSV7a)" }, { id: "KSV7a", text: "Paradise Dragona (KR: KSV7a)" }, { id: "SV8", text: "Super Electric Breaker (JP: SV8)" }, { id: "CSV8", text: "Super Electric Breaker (CH: CSV8)" }, { id: "KSV8", text: "Super Electric Breaker (KR: KSV8)" }, { id: "SV8a", text: "Terastal Festival (JP: SV8a)" }, { id: "CSV8a", text: "Terastal Festival (CH: CSV8a)" }, { id: "KSV8a", text: "Terastal Festival (KR: KSV8a)" }
     ];
 
-    // Populate Sets Datalist
+    let rowBeingEdited = null; // System memory for non-destructive editing
+
     const setDatalist = document.getElementById('set-options');
     database.forEach(item => {
         let option = document.createElement('option');
@@ -89,7 +92,6 @@
         setDatalist.appendChild(option);
     });
 
-    // Handle Set Selection (Hybrid UX: Instant Local + Background Cloud)
     document.getElementById('input-set').addEventListener('input', function() {
         const typedValue = this.value;
         const matchedItem = database.find(item => item.text === typedValue);
@@ -99,7 +101,6 @@
         if (matchedItem) {
             document.getElementById('input-code').value = matchedItem.id;
             
-            // 1. INSTANT LOCAL PREDICTOR 
             cardDatalist.innerHTML = '';
             for (let i = 1; i <= 300; i++) {
                 let numStr = String(i).padStart(3, '0');
@@ -109,7 +110,6 @@
             }
             nameInput.placeholder = "2. Type No. (e.g. 025)...";
 
-            // 2. BACKGROUND API UPGRADE 
             const baseName = matchedItem.text.split(" (")[0];
             const safeName = encodeURIComponent('"' + baseName + '"');
 
@@ -134,113 +134,130 @@
         }
     });
 
-    // --- LOCAL STORAGE FUNCTIONS ---
-    
-    // Save the entire table to the browser's cache
+    // --- SECURE DATA STORAGE ---
     function saveToLocalStorage() {
         let inventoryData = [];
         const rows = document.querySelectorAll("#inventory-table tbody tr");
         rows.forEach(row => {
             const cells = row.querySelectorAll("td");
-            inventoryData.push({
-                ref: cells[0].innerText,
-                set: cells[1].innerText,
-                code: cells[2].innerText,
-                name: cells[3].innerText,
-                loc: cells[4].innerText,
-                qty: cells[5].innerText
-            });
+            inventoryData.push({ ref: cells[0].innerText, set: cells[1].innerText, code: cells[2].innerText, name: cells[3].innerText, loc: cells[4].innerText, qty: cells[5].innerText });
         });
         localStorage.setItem('pokemonInventory', JSON.stringify(inventoryData));
     }
 
-    // Load table from browser's cache on startup
     function loadFromLocalStorage() {
         const savedData = localStorage.getItem('pokemonInventory');
         if (savedData) {
+            // SILENT FAIL-SAFE: Saves a hidden backup copy just in case!
+            localStorage.setItem('pokemonInventory_backup', savedData);
+            
             const inventoryData = JSON.parse(savedData);
-            inventoryData.forEach(item => {
-                addRow(item.ref, item.set, item.code, item.name, item.loc, item.qty, false);
-            });
+            inventoryData.forEach(item => addRow(item.ref, item.set, item.code, item.name, item.loc, item.qty, false));
         }
     }
-
-    // Run the load function as soon as the page is ready
     document.addEventListener("DOMContentLoaded", loadFromLocalStorage);
 
-    // --- END LOCAL STORAGE FUNCTIONS ---
-
-    // Add Item to UI Table
+    // --- SECURE ADD & EDIT FUNCTIONS ---
     function addRow(ref, set, code, name, loc, qty, triggerSave = true) {
-        if (!name || !set) { alert("Please specify the Set and Card Name/Number."); return; }
         const tbody = document.querySelector("#inventory-table tbody");
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
-            <td>${ref}</td>
-            <td>${set}</td>
-            <td>${code}</td>
-            <td>${name}</td>
-            <td>${loc}</td>
-            <td>${qty}</td>
+            <td>${ref}</td><td>${set}</td><td>${code}</td><td>${name}</td><td>${loc}</td><td>${qty}</td>
             <td>
                 <button class="btn-edit" onclick="editRow(this)">Edit</button>
                 <button class="btn-delete" onclick="deleteRow(this)">Del</button>
             </td>
         `;
         tbody.appendChild(tr);
-        
-        // Save the update automatically
-        if (triggerSave) { saveToLocalStorage(); }
+        if (triggerSave) saveToLocalStorage();
     }
 
     function addFromUI() {
-        addRow(
-            document.getElementById('input-ref').value,
-            document.getElementById('input-set').value,
-            document.getElementById('input-code').value,
-            document.getElementById('input-name').value,
-            document.getElementById('input-location').value,
-            document.getElementById('input-qty').value
-        );
-        
-        // The requested Full Wipe feature
-        document.getElementById('input-ref').value = '';
-        document.getElementById('input-set').value = '';
-        document.getElementById('input-code').value = '';
-        document.getElementById('input-name').value = '';
-        document.getElementById('input-location').value = '';
-        document.getElementById('input-qty').value = 1; 
-        document.getElementById('input-name').placeholder = "2. Type No. (e.g. 025)...";
-        document.getElementById('card-options').innerHTML = ''; 
-    }
+        const ref = document.getElementById('input-ref').value;
+        const set = document.getElementById('input-set').value;
+        const code = document.getElementById('input-code').value;
+        const name = document.getElementById('input-name').value;
+        const loc = document.getElementById('input-location').value;
+        const qty = document.getElementById('input-qty').value;
 
-    function deleteRow(btn) { 
-        if(confirm("Delete this item?")) {
-            btn.closest("tr").remove(); 
-            saveToLocalStorage(); // Save after deleting
+        if (!name || !set) { alert("Please specify the Set and Card Name/Number."); return; }
+
+        if (rowBeingEdited) {
+            // UPDATE EXISTING ROW (Non-destructive)
+            const cells = rowBeingEdited.querySelectorAll("td");
+            cells[0].innerText = ref; cells[1].innerText = set; cells[2].innerText = code;
+            cells[3].innerText = name; cells[4].innerText = loc; cells[5].innerText = qty;
+            
+            // Revert interface
+            cancelEdit();
+            saveToLocalStorage();
+        } else {
+            // NORMAL ADD
+            addRow(ref, set, code, name, loc, qty);
+            clearInputs();
         }
     }
 
     function editRow(btn) {
-        const cells = btn.closest("tr").querySelectorAll("td");
+        rowBeingEdited = btn.closest("tr");
+        const cells = rowBeingEdited.querySelectorAll("td");
+        
         document.getElementById('input-ref').value = cells[0].innerText;
         document.getElementById('input-set').value = cells[1].innerText;
         document.getElementById('input-code').value = cells[2].innerText;
         document.getElementById('input-name').value = cells[3].innerText;
         document.getElementById('input-location').value = cells[4].innerText;
         document.getElementById('input-qty').value = cells[5].innerText;
-        btn.closest("tr").remove();
-        saveToLocalStorage(); // Save after removing it to be edited
+        
+        const addBtn = document.getElementById('main-action-btn');
+        addBtn.innerText = "Save Edit";
+        addBtn.style.backgroundColor = "#f39c12"; 
+        document.getElementById('cancel-edit-btn').style.display = "inline-block";
     }
 
-    function clearAllData() {
-        if(confirm("Are you sure you want to permanently wipe all data? You should download a CSV backup first!")) {
-            document.querySelector("#inventory-table tbody").innerHTML = '';
-            localStorage.removeItem('pokemonInventory');
+    function cancelEdit() {
+        rowBeingEdited = null;
+        const addBtn = document.getElementById('main-action-btn');
+        addBtn.innerText = "Add to Stock";
+        addBtn.style.backgroundColor = "#27ae60"; 
+        document.getElementById('cancel-edit-btn').style.display = "none";
+        clearInputs();
+    }
+
+    function clearInputs() {
+        document.getElementById('input-ref').value = ''; document.getElementById('input-set').value = '';
+        document.getElementById('input-code').value = ''; document.getElementById('input-name').value = '';
+        document.getElementById('input-location').value = ''; document.getElementById('input-qty').value = 1; 
+        document.getElementById('input-name').placeholder = "2. Type No. (e.g. 025)...";
+        document.getElementById('card-options').innerHTML = ''; 
+    }
+
+    // --- SECURE DELETE FUNCTIONS ---
+    function deleteRow(btn) { 
+        const row = btn.closest("tr");
+        const cardName = row.querySelectorAll("td")[3].innerText; // Grab the exact card name
+        
+        if(confirm(`Are you sure you want to delete this specific card?\n\n${cardName}`)) {
+            row.remove(); 
+            saveToLocalStorage(); 
         }
     }
 
+    function clearAllData() {
+        // Strict Type-to-Confirm security check
+        const securityCheck = prompt("WARNING: This will permanently wipe all data from your table.\n\nTo proceed, please type the word DELETE in the box below:");
+        
+        if(securityCheck === "DELETE") {
+            document.querySelector("#inventory-table tbody").innerHTML = '';
+            localStorage.removeItem('pokemonInventory');
+            alert("All data has been successfully deleted.");
+        } else if (securityCheck !== null) {
+            alert("Wipe cancelled. Your data is perfectly safe.");
+        }
+    }
+
+    // --- CSV FUNCTIONS ---
     function downloadCSV() {
         let csvData = [];
         document.querySelectorAll("#inventory-table tr").forEach(row => {
@@ -260,9 +277,7 @@
         Papa.parse(e.target.files[0], {
             header: true, skipEmptyLines: true,
             complete: function(results) {
-                // Add all rows from CSV
                 results.data.forEach(row => addRow(row["Ref / SKU"] || "", row["Set"] || "", row["Code"] || "", row["No. & Card Name"] || row["Card Name & No."] || "", row["Location"] || "", row["Qty"] || "1", false));
-                // Do one big save at the end instead of saving 100 times during the loop
                 saveToLocalStorage(); 
             }
         });
