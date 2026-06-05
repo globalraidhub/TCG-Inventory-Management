@@ -11,9 +11,10 @@
         h2 { color: #2c3e50; margin-top: 0; display: flex; justify-content: space-between; align-items: center; }
         
         .action-buttons { display: flex; gap: 10px; }
-        .btn-upload { background-color: #8e44ad; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
-        .btn-download { background-color: #2980b9; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
-        .btn-clear { background-color: #7f8c8d; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+        .btn-upload { background-color: #8e44ad; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-download { background-color: #2980b9; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-audit { background-color: #f1c40f; color: #2c3e50; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-clear { background-color: #7f8c8d; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         
         .inventory-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; margin-top: 20px; background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 8px;}
         input, select { height: 40px; border: 1px solid #ddd; border-radius: 6px; padding: 0 10px; box-sizing: border-box;}
@@ -40,8 +41,9 @@
         <div class="action-buttons">
             <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
             <button class="btn-upload" onclick="document.getElementById('csv-file-input').click()">Upload CSV</button>
-            <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
-            <button class="btn-clear" onclick="clearAllData()">Wipe All Data</button>
+            <button class="btn-download" onclick="downloadCSV()">Master Backup</button>
+            <button class="btn-audit" onclick="downloadEbayAudit()">eBay Audit Export</button>
+            <button class="btn-clear" onclick="clearAllData()">Wipe Data</button>
         </div>
     </h2>
     
@@ -92,7 +94,7 @@
 </div>
 
 <script>
-    // Complete 83-Set Multilingual Dataset
+    // Complete 86-Set Multilingual Dataset
     const database = [
         { id: "CRI", text: "Chaos Rising (EN: CRI)" }, { id: "M4", text: "Ninja Spinner (JP: M4)" }, { id: "CM4", text: "Ninja Spinner (CH: CM4)" }, { id: "KM4", text: "Ninja Spinner (KR: KM4)" },
         { id: "PFO", text: "Perfect Order (EN: PFO)" }, { id: "M3", text: "Nihil Zero (JP: M3)" }, { id: "CM3", text: "Nihil Zero (CH: CM3)" }, { id: "KM3", text: "Nihil Zero (KR: KM3)" },
@@ -180,7 +182,7 @@
         if (matchedItem) {
             document.getElementById('input-code').value = matchedItem.id;
             
-            // 1. INSTANT NUMBER GENERATOR (Guaranteed 1 to 300)
+            // INSTANT NUMBER GENERATOR
             cardDatalist.innerHTML = '';
             for (let i = 1; i <= 300; i++) {
                 let numStr = String(i).padStart(3, '0');
@@ -190,7 +192,7 @@
             }
             nameInput.placeholder = "2. Type No. (e.g. 025)...";
             
-            // 2. THE FIREWALL: Only ask the API if it is an English set
+            // THE FIREWALL: Only ask API for English sets
             const isEnglish = matchedItem.text.includes("(EN:");
             
             if (isEnglish) {
@@ -336,6 +338,8 @@
     }
 
     // --- CSV FUNCTIONS ---
+    
+    // Master Backup Export
     function downloadCSV() {
         let csvData = [];
         document.querySelectorAll("#inventory-table tr").forEach(row => {
@@ -346,7 +350,34 @@
         });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([csvData.join("\n")], { type: "text/csv" }));
-        link.download = "Pokemon_Inventory.csv";
+        link.download = "Pokemon_Inventory_Master.csv";
+        link.click();
+    }
+    
+    // eBay Audit Export
+    function downloadEbayAudit() {
+        let csvData = [];
+        
+        // Setup eBay-specific headers
+        csvData.push('"Custom Label (SKU)","Card Name","Set","Quantity"');
+
+        // Extract specific columns for active inventory
+        document.querySelectorAll("#inventory-table tbody tr").forEach(row => {
+            let cells = row.querySelectorAll("td");
+            if(cells.length > 0) {
+                // Formatting specifically to match eBay active listing reports
+                let sku = '"' + cells[0].innerText.replace(/"/g, '""') + '"';
+                let set = '"' + cells[1].innerText.replace(/"/g, '""') + '"';
+                let name = '"' + cells[3].innerText.replace(/"/g, '""') + '"';
+                let qty = '"' + cells[5].innerText.replace(/"/g, '""') + '"';
+                
+                csvData.push([sku, name, set, qty].join(","));
+            }
+        });
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([csvData.join("\n")], { type: "text/csv" }));
+        link.download = "eBay_Audit_List.csv";
         link.click();
     }
 
