@@ -16,13 +16,16 @@
         .btn-clear { background-color: #7f8c8d; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
         
         .inventory-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; margin-top: 20px; background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 8px;}
-        input { height: 40px; border: 1px solid #ddd; border-radius: 6px; padding: 0 10px; box-sizing: border-box;}
+        input, select { height: 40px; border: 1px solid #ddd; border-radius: 6px; padding: 0 10px; box-sizing: border-box;}
         
         .btn-add { background-color: #27ae60; color: white; border: none; padding: 0 20px; height: 40px; border-radius: 6px; cursor: pointer; font-weight: bold;}
         .btn-add:hover { background-color: #219150; }
         .btn-cancel { background-color: #e74c3c; color: white; border: none; padding: 0 20px; height: 40px; border-radius: 6px; cursor: pointer; font-weight: bold; display: none; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        .filter-section { display: flex; gap: 10px; align-items: center; background-color: #e8f4f8; padding: 15px; border-radius: 8px; border: 1px solid #d1e5eb; margin-bottom: 10px; }
+        .btn-clear-filters { background-color: #95a5a6; color: white; border: none; padding: 0 15px; height: 40px; border-radius: 6px; cursor: pointer; font-weight: bold;}
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
         th, td { border-bottom: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background-color: #f8f9fa; }
         .btn-edit { background-color: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px; }
@@ -60,6 +63,15 @@
         <button class="btn-cancel" id="cancel-edit-btn" onclick="cancelEdit()">Cancel Edit</button>
     </div>
 
+    <div class="filter-section">
+        <strong>Filter Inventory:</strong>
+        <input type="text" id="filter-text" placeholder="Search Card Name, Ref, or Code..." style="flex: 1;">
+        <select id="filter-set" style="width: 250px;">
+            <option value="">All Sets (No Filter)</option>
+        </select>
+        <button class="btn-clear-filters" onclick="clearFilters()">Clear Filters</button>
+    </div>
+
     <table id="inventory-table">
         <thead>
             <tr>
@@ -77,40 +89,88 @@
 </div>
 
 <script>
-    // Complete 80-Set Multilingual Dataset
+    // Complete 81-Set Multilingual Dataset
     const database = [
-       { id: "CRI", text: "Chaos Rising (EN: CRI)" }, { id: "M4", text: "Ninja Spinner (JP: M4)" }, { id: "CM4", text: "Ninja Spinner (CH: CM4)" }, { id: "KM4", text: "Ninja Spinner (KR: KM4)" },
-    { id: "PFO", text: "Perfect Order (EN: PFO)" }, { id: "M3", text: "Nihil Zero (JP: M3)" }, { id: "CM3", text: "Nihil Zero (CH: CM3)" }, { id: "KM3", text: "Nihil Zero (KR: KM3)" },
-    { id: "ASH", text: "Ascended Heroes (EN: ASH)" }, { id: "M2a", text: "Mega Symphonia (JP: M2a)" }, { id: "CM2a", text: "Mega Symphonia (CH: CM2a)" }, { id: "KM2a", text: "Mega Symphonia (KR: KM2a)" },
-    { id: "M2A", text: "Mega Dream ex (JP: M2A)" },
-    { id: "PHF", text: "Phantasmal Flames (EN: PHF)" }, { id: "M2", text: "Inferno X (JP: M2)" }, { id: "CM2", text: "Inferno X (CH: CM2)" }, { id: "KM2", text: "Inferno X (KR: KM2)" },
-    { id: "MEV", text: "Mega Evolution (EN: MEV)" }, { id: "M1", text: "Mega Evolution (JP: M1)" }, { id: "CM1", text: "Mega Evolution (CH: CM1)" }, { id: "KM1", text: "Mega Evolution (KR: KM1)" },
-    { id: "BLB", text: "Black Bolt (EN: BLB)" }, { id: "SV8.5", text: "Black Bolt (JP: SV8.5)" }, { id: "CSV8", text: "Black Bolt (CH: CSV8)" }, { id: "KS8", text: "Black Bolt (KR: KS8)" },
-    { id: "WHF", text: "White Flare (EN: WHF)" }, { id: "SV8", text: "White Flare (JP: SV8)" }, { id: "CSV7", text: "White Flare (CH: CSV7)" }, { id: "KS7", text: "White Flare (KR: KS7)" },
-    { id: "DRI", text: "Destined Rivals (EN: DRI)" }, { id: "SV8.5", text: "Terastal Festival (JP: SV8.5)" }, { id: "CSV6", text: "Terastal Festival (CH: CSV6)" }, { id: "KS6", text: "Terastal Festival (KR: KS6)" },
-    { id: "JTG", text: "Journey Together (EN: JTG)" }, { id: "SV8", text: "Super Electric Breaker (JP: SV8)" }, { id: "CSV5", text: "Super Electric Breaker (CH: CSV5)" }, { id: "KS5", text: "Super Electric Breaker (KR: KS5)" },
-    { id: "PRE", text: "Prismatic Evolutions (EN: PRE)" }, { id: "SV7.5", text: "Terastal Dream (JP: SV7.5)" }, { id: "CSV4", text: "Terastal Dream (CH: CSV4)" }, { id: "KS4", text: "Terastal Dream (KR: KS4)" },
-    { id: "SV08", text: "Surging Sparks (EN: SV08)" }, { id: "SV7", text: "Paradise Dragona (JP: SV7)" }, { id: "CSV3", text: "Paradise Dragona (CH: CSV3)" }, { id: "KS3", text: "Paradise Dragona (KR: KS3)" },
-    { id: "SCR", text: "Stellar Crown (EN: SCR)" }, { id: "SV6.5", text: "Stellar Miracle (JP: SV6.5)" }, { id: "CSV2", text: "Stellar Miracle (CH: CSV2)" }, { id: "KS2", text: "Stellar Miracle (KR: KS2)" },
-    { id: "SFA", text: "Shrouded Fable (EN: SFA)" }, { id: "SV6", text: "Night Wanderer (JP: SV6)" }, { id: "CSV1", text: "Night Wanderer (CH: CSV1)" }, { id: "KS1", text: "Night Wanderer (KR: KS1)" },
-    { id: "TWM", text: "Twilight Masquerade (EN: TWM)" }, { id: "SV6", text: "Mask of Change (JP: SV6)" }, { id: "CS-SV6", text: "Mask of Change (CH: CS-SV6)" }, { id: "KS-SV6", text: "Mask of Change (KR: KS-SV6)" },
-    { id: "TEF", text: "Temporal Forces (EN: TEF)" }, { id: "SV4", text: "Cyber Judge (JP: SV4)" }, { id: "CS-SV5", text: "Cyber Judge (CH: CS-SV5)" }, { id: "KS-SV5", text: "Cyber Judge (KR: KS-SV5)" },
-    { id: "PAF", text: "Paldean Fates (EN: PAF)" }, { id: "SV4a", text: "Shiny Treasure ex (JP: SV4a)" }, { id: "CS-SV4.5", text: "Shiny Treasure ex (CH: CS-SV4.5)" }, { id: "KS-SV4.5", text: "Shiny Treasure ex (KR: KS-SV4.5)" },
-    { id: "PAR", text: "Paradox Rift (EN: PAR)" }, { id: "SV3.5", text: "Ancient Roar (JP: SV3.5)" }, { id: "CS-SV4", text: "Ancient Roar (CH: CS-SV4)" }, { id: "CS-SV4", text: "Ancient Roar (KR: CS-SV4)" },
-    { id: "MEW", text: "Pokémon 151 (EN: MEW)" }, { id: "SV2a", text: "Pokémon Card 151 (JP: SV2a)" }, { id: "CS-SV151", text: "Pokémon Card 151 (CH: CS-SV151)" }, { id: "KS-SV151", text: "Pokémon Card 151 (KR: KS-SV151)" },
-    { id: "OBF", text: "Obsidian Flames (EN: OBF)" }, { id: "SV3", text: "Ruler of the Black Flame (JP: SV3)" }, { id: "CS-SV3", text: "Ruler of the Black Flame (CH: CS-SV3)" }, { id: "KS-SV3", text: "Ruler of the Black Flame (KR: KS-SV3)" },
-    { id: "PAL", text: "Paldea Evolved (EN: PAL)" }, { id: "SV2", text: "Clay Burst (JP: SV2)" }, { id: "CS-SV2", text: "Clay Burst (CH: CS-SV2)" }, { id: "KS-SV2", text: "Clay Burst (KR: KS-SV2)" }
+        { id: "CRI", text: "Chaos Rising (EN: CRI)" }, { id: "M4", text: "Ninja Spinner (JP: M4)" }, { id: "CM4", text: "Ninja Spinner (CH: CM4)" }, { id: "KM4", text: "Ninja Spinner (KR: KM4)" },
+        { id: "PFO", text: "Perfect Order (EN: PFO)" }, { id: "M3", text: "Nihil Zero (JP: M3)" }, { id: "CM3", text: "Nihil Zero (CH: CM3)" }, { id: "KM3", text: "Nihil Zero (KR: KM3)" },
+        { id: "ASH", text: "Ascended Heroes (EN: ASH)" }, { id: "M2a", text: "Mega Symphonia (JP: M2a)" }, { id: "CM2a", text: "Mega Symphonia (CH: CM2a)" }, { id: "KM2a", text: "Mega Symphonia (KR: KM2a)" },
+        { id: "M2A", text: "Mega Dream ex (JP: M2A)" },
+        { id: "PHF", text: "Phantasmal Flames (EN: PHF)" }, { id: "M2", text: "Inferno X (JP: M2)" }, { id: "CM2", text: "Inferno X (CH: CM2)" }, { id: "KM2", text: "Inferno X (KR: KM2)" },
+        { id: "MEV", text: "Mega Evolution (EN: MEV)" }, { id: "M1", text: "Mega Evolution (JP: M1)" }, { id: "CM1", text: "Mega Evolution (CH: CM1)" }, { id: "KM1", text: "Mega Evolution (KR: KM1)" },
+        { id: "BLB", text: "Black Bolt (EN: BLB)" }, { id: "SV8.5", text: "Black Bolt (JP: SV8.5)" }, { id: "CSV8", text: "Black Bolt (CH: CSV8)" }, { id: "KS8", text: "Black Bolt (KR: KS8)" },
+        { id: "WHF", text: "White Flare (EN: WHF)" }, { id: "SV8", text: "White Flare (JP: SV8)" }, { id: "CSV7", text: "White Flare (CH: CSV7)" }, { id: "KS7", text: "White Flare (KR: KS7)" },
+        { id: "DRI", text: "Destined Rivals (EN: DRI)" }, { id: "SV8.5", text: "Terastal Festival (JP: SV8.5)" }, { id: "CSV6", text: "Terastal Festival (CH: CSV6)" }, { id: "KS6", text: "Terastal Festival (KR: KS6)" },
+        { id: "JTG", text: "Journey Together (EN: JTG)" }, { id: "SV8", text: "Super Electric Breaker (JP: SV8)" }, { id: "CSV5", text: "Super Electric Breaker (CH: CSV5)" }, { id: "KS5", text: "Super Electric Breaker (KR: KS5)" },
+        { id: "PRE", text: "Prismatic Evolutions (EN: PRE)" }, { id: "SV7.5", text: "Terastal Dream (JP: SV7.5)" }, { id: "CSV4", text: "Terastal Dream (CH: CSV4)" }, { id: "KS4", text: "Terastal Dream (KR: KS4)" },
+        { id: "SV08", text: "Surging Sparks (EN: SV08)" }, { id: "SV7", text: "Paradise Dragona (JP: SV7)" }, { id: "CSV3", text: "Paradise Dragona (CH: CSV3)" }, { id: "KS3", text: "Paradise Dragona (KR: KS3)" },
+        { id: "SCR", text: "Stellar Crown (EN: SCR)" }, { id: "SV6.5", text: "Stellar Miracle (JP: SV6.5)" }, { id: "CSV2", text: "Stellar Miracle (CH: CSV2)" }, { id: "KS2", text: "Stellar Miracle (KR: KS2)" },
+        { id: "SFA", text: "Shrouded Fable (EN: SFA)" }, { id: "SV6", text: "Night Wanderer (JP: SV6)" }, { id: "CSV1", text: "Night Wanderer (CH: CSV1)" }, { id: "KS1", text: "Night Wanderer (KR: KS1)" },
+        { id: "TWM", text: "Twilight Masquerade (EN: TWM)" }, { id: "SV6", text: "Mask of Change (JP: SV6)" }, { id: "CS-SV6", text: "Mask of Change (CH: CS-SV6)" }, { id: "KS-SV6", text: "Mask of Change (KR: KS-SV6)" },
+        { id: "TEF", text: "Temporal Forces (EN: TEF)" }, { id: "SV4", text: "Cyber Judge (JP: SV4)" }, { id: "CS-SV5", text: "Cyber Judge (CH: CS-SV5)" }, { id: "KS-SV5", text: "Cyber Judge (KR: KS-SV5)" },
+        { id: "PAF", text: "Paldean Fates (EN: PAF)" }, { id: "SV4a", text: "Shiny Treasure ex (JP: SV4a)" }, { id: "CS-SV4.5", text: "Shiny Treasure ex (CH: CS-SV4.5)" }, { id: "KS-SV4.5", text: "Shiny Treasure ex (KR: KS-SV4.5)" },
+        { id: "PAR", text: "Paradox Rift (EN: PAR)" }, { id: "SV3.5", text: "Ancient Roar (JP: SV3.5)" }, { id: "CS-SV4", text: "Ancient Roar (CH: CS-SV4)" }, { id: "CS-SV4", text: "Ancient Roar (KR: CS-SV4)" },
+        { id: "MEW", text: "Pokémon 151 (EN: MEW)" }, { id: "SV2a", text: "Pokémon Card 151 (JP: SV2a)" }, { id: "CS-SV151", text: "Pokémon Card 151 (CH: CS-SV151)" }, { id: "KS-SV151", text: "Pokémon Card 151 (KR: KS-SV151)" },
+        { id: "OBF", text: "Obsidian Flames (EN: OBF)" }, { id: "SV3", text: "Ruler of the Black Flame (JP: SV3)" }, { id: "CS-SV3", text: "Ruler of the Black Flame (CH: CS-SV3)" }, { id: "KS-SV3", text: "Ruler of the Black Flame (KR: KS-SV3)" },
+        { id: "PAL", text: "Paldea Evolved (EN: PAL)" }, { id: "SV2", text: "Clay Burst (JP: SV2)" }, { id: "CS-SV2", text: "Clay Burst (CH: CS-SV2)" }, { id: "KS-SV2", text: "Clay Burst (KR: KS-SV2)" }
     ];
 
-    let rowBeingEdited = null; // System memory for non-destructive editing
+    let rowBeingEdited = null; 
 
+    // --- SETUP DATALISTS AND DROPDOWNS ---
     const setDatalist = document.getElementById('set-options');
+    const filterSetDropdown = document.getElementById('filter-set');
+    
     database.forEach(item => {
-        let option = document.createElement('option');
-        option.value = item.text;
-        setDatalist.appendChild(option);
+        // Add to main entry datalist
+        let option1 = document.createElement('option');
+        option1.value = item.text;
+        setDatalist.appendChild(option1);
+
+        // Add to filter dropdown
+        let option2 = document.createElement('option');
+        option2.value = item.text;
+        option2.innerText = item.text;
+        filterSetDropdown.appendChild(option2);
     });
 
+    // --- FILTERING LOGIC ---
+    function applyFilters() {
+        const searchText = document.getElementById('filter-text').value.toLowerCase();
+        const setFilter = document.getElementById('filter-set').value;
+        const rows = document.querySelectorAll("#inventory-table tbody tr");
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll("td");
+            if (cells.length < 6) return;
+            
+            const ref = cells[0].innerText.toLowerCase();
+            const set = cells[1].innerText;
+            const code = cells[2].innerText.toLowerCase();
+            const name = cells[3].innerText.toLowerCase();
+            
+            const matchesText = searchText === "" || name.includes(searchText) || ref.includes(searchText) || code.includes(searchText);
+            const matchesSet = setFilter === "" || set === setFilter;
+            
+            if (matchesText && matchesSet) {
+                row.style.display = ""; // Show
+            } else {
+                row.style.display = "none"; // Hide
+            }
+        });
+    }
+
+    function clearFilters() {
+        document.getElementById('filter-text').value = '';
+        document.getElementById('filter-set').value = '';
+        applyFilters(); // Re-run to show all
+    }
+
+    // Attach listeners to filter inputs
+    document.getElementById('filter-text').addEventListener('input', applyFilters);
+    document.getElementById('filter-set').addEventListener('change', applyFilters);
+
+
+    // --- API FETCH LOGIC ---
     document.getElementById('input-set').addEventListener('input', function() {
         const typedValue = this.value;
         const matchedItem = database.find(item => item.text === typedValue);
@@ -119,37 +179,25 @@
         
         if (matchedItem) {
             document.getElementById('input-code').value = matchedItem.id;
+            cardDatalist.innerHTML = '<option value="Loading...">';
             
-            cardDatalist.innerHTML = '';
-            for (let i = 1; i <= 300; i++) {
-                let numStr = String(i).padStart(3, '0');
-                let option = document.createElement('option');
-                option.value = `${numStr} - `; 
-                cardDatalist.appendChild(option);
-            }
-            nameInput.placeholder = "2. Type No. (e.g. 025)...";
-
             const baseName = matchedItem.text.split(" (")[0];
-            const safeName = encodeURIComponent('"' + baseName + '"');
-
-            fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:${safeName}&select=name,number&orderBy=number&pageSize=300`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.data && data.data.length > 0) {
-                        cardDatalist.innerHTML = '';
-                        data.data.forEach(card => {
-                            let numStr = String(card.number).padStart(3, '0');
+            
+            fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:"${baseName}"&pageSize=300`)
+                .then(r => r.json())
+                .then(d => {
+                    cardDatalist.innerHTML = '';
+                    if (d.data && d.data.length > 0) {
+                        d.data.sort((a,b) => a.number - b.number).forEach(card => {
                             let option = document.createElement('option');
-                            option.value = `${numStr} - ${card.name}`;
+                            option.value = `${String(card.number).padStart(3, '0')} - ${card.name}`;
                             cardDatalist.appendChild(option);
                         });
-                        nameInput.placeholder = "2. Type No. or Name...";
                     }
-                }).catch(err => {});
+                }).catch(() => cardDatalist.innerHTML = '');
         } else {
             document.getElementById('input-code').value = ''; 
             cardDatalist.innerHTML = '';
-            nameInput.placeholder = "2. Type No. or Name...";
         }
     });
 
@@ -167,11 +215,10 @@
     function loadFromLocalStorage() {
         const savedData = localStorage.getItem('pokemonInventory');
         if (savedData) {
-            // SILENT FAIL-SAFE: Saves a hidden backup copy just in case!
             localStorage.setItem('pokemonInventory_backup', savedData);
-            
             const inventoryData = JSON.parse(savedData);
             inventoryData.forEach(item => addRow(item.ref, item.set, item.code, item.name, item.loc, item.qty, false));
+            applyFilters(); // Apply filters immediately upon load just in case
         }
     }
     document.addEventListener("DOMContentLoaded", loadFromLocalStorage);
@@ -190,6 +237,7 @@
         `;
         tbody.appendChild(tr);
         if (triggerSave) saveToLocalStorage();
+        applyFilters(); // Ensure the new row respects current filter settings
     }
 
     function addFromUI() {
@@ -203,16 +251,14 @@
         if (!name || !set) { alert("Please specify the Set and Card Name/Number."); return; }
 
         if (rowBeingEdited) {
-            // UPDATE EXISTING ROW (Non-destructive)
             const cells = rowBeingEdited.querySelectorAll("td");
             cells[0].innerText = ref; cells[1].innerText = set; cells[2].innerText = code;
             cells[3].innerText = name; cells[4].innerText = loc; cells[5].innerText = qty;
             
-            // Revert interface
             cancelEdit();
             saveToLocalStorage();
+            applyFilters(); // Refresh filters after edit
         } else {
-            // NORMAL ADD
             addRow(ref, set, code, name, loc, qty);
             clearInputs();
         }
@@ -248,14 +294,13 @@
         document.getElementById('input-ref').value = ''; document.getElementById('input-set').value = '';
         document.getElementById('input-code').value = ''; document.getElementById('input-name').value = '';
         document.getElementById('input-location').value = ''; document.getElementById('input-qty').value = 1; 
-        document.getElementById('input-name').placeholder = "2. Type No. (e.g. 025)...";
         document.getElementById('card-options').innerHTML = ''; 
     }
 
     // --- SECURE DELETE FUNCTIONS ---
     function deleteRow(btn) { 
         const row = btn.closest("tr");
-        const cardName = row.querySelectorAll("td")[3].innerText; // Grab the exact card name
+        const cardName = row.querySelectorAll("td")[3].innerText; 
         
         if(confirm(`Are you sure you want to delete this specific card?\n\n${cardName}`)) {
             row.remove(); 
@@ -264,7 +309,6 @@
     }
 
     function clearAllData() {
-        // Strict Type-to-Confirm security check
         const securityCheck = prompt("WARNING: This will permanently wipe all data from your table.\n\nTo proceed, please type the word DELETE in the box below:");
         
         if(securityCheck === "DELETE") {
@@ -298,6 +342,7 @@
             complete: function(results) {
                 results.data.forEach(row => addRow(row["Ref / SKU"] || "", row["Set"] || "", row["Code"] || "", row["No. & Card Name"] || row["Card Name & No."] || "", row["Location"] || "", row["Qty"] || "1", false));
                 saveToLocalStorage(); 
+                applyFilters();
             }
         });
         e.target.value = ''; 
