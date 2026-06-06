@@ -11,7 +11,7 @@
         .container { max-width: 1400px; margin: auto; background: #1e1e1e; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         
         .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        h2 { color: #ffffff; margin: 0; } /* explicitly white */
+        h2 { color: #ffffff; margin: 0; }
         .portfolio-value { background-color: #000000; color: #2ecc71; padding: 10px 20px; border-radius: 8px; font-size: 24px; font-weight: bold; border: 2px solid #2ecc71; }
 
         .action-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;}
@@ -74,7 +74,6 @@
         <button class="btn-clear" onclick="clearAllData()">Wipe Data</button>
     </div>
     
-    <!-- CARD ENTRY ROW -->
     <div class="inventory-row">
         <input type="text" id="input-ref" placeholder="Ref / SKU" style="width: 100px;">
         
@@ -93,11 +92,9 @@
         <button class="btn-cancel" id="cancel-edit-btn" onclick="cancelEdit()">Cancel Edit</button>
     </div>
 
-    <!-- TARGETED COLUMN FILTERS & SORTING -->
     <div class="filter-section">
         <strong style="color: #fff;">Sort & Filter:</strong>
         
-        <!-- NEW SORTING DROPDOWN -->
         <select id="sort-dropdown" style="width: 160px; font-weight: bold; background-color: #34495e;" onchange="sortTable()">
             <option value="default">Sort By: None</option>
             <option value="qty-desc">Qty: High to Low</option>
@@ -123,7 +120,6 @@
         <button class="btn-clear-filters" onclick="clearFilters()">Clear</button>
     </div>
 
-    <!-- INVENTORY TABLE -->
     <table id="inventory-table">
         <thead>
             <tr>
@@ -155,7 +151,7 @@
         { id: "DRI", text: "Destined Rivals (EN: DRI)", total: "182" },
         { id: "JTG", text: "Journey Together (EN: JTG)", total: "143" },
         { id: "PRE", text: "Prismatic Evolutions (EN: PRE)", total: "175" },
-        { id: "SSP", text: "Surging Sparks (EN: SSP)", total: "191" },
+        { id: "SV08", text: "Surging Sparks (EN: SV08)", total: "191" },
         { id: "SCR", text: "Stellar Crown (EN: SCR)", total: "142" },
         { id: "SFA", text: "Shrouded Fable (EN: SFA)", total: "064" },
         { id: "TWM", text: "Twilight Masquerade (EN: TWM)", total: "167" },
@@ -215,16 +211,15 @@
             const typedValue = this.value.toLowerCase().trim();
             if (!typedValue) return;
 
-            // Find the best match by checking the ID (e.g. "m2a") or the text
             const match = database.find(item => 
                 item.id.toLowerCase() === typedValue || 
                 item.text.toLowerCase().includes(typedValue)
             );
 
             if (match) {
-                this.value = match.text; // Auto-fill the exact full text
-                this.dispatchEvent(new Event('input')); // Trigger the API fetch and Code auto-fill
-                document.getElementById('input-name').focus(); // Instantly jump cursor to the next box
+                this.value = match.text; 
+                this.dispatchEvent(new Event('input')); 
+                document.getElementById('input-name').focus(); 
             }
         }
     });
@@ -236,6 +231,7 @@
     document.getElementById('input-qty').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') { e.preventDefault(); addFromUI(); }
     });
+
     // --- SORTING LOGIC ---
     function sortTable() {
         const tbody = document.querySelector("#inventory-table tbody");
@@ -268,7 +264,6 @@
             }
         });
 
-        // Re-append rows in the new sorted order
         rows.forEach(row => tbody.appendChild(row));
     }
 
@@ -382,17 +377,14 @@
     // --- SMART PARTIAL MATCH AUTO-FILL ---
     document.getElementById('input-name').addEventListener('input', function() {
         const typedValue = this.value.toLowerCase();
-        // Only trigger if you have typed at least 2 characters to avoid "snapping" to 001 immediately
         if (typedValue.length < 2) return; 
 
         const cardDatalist = document.getElementById('card-options');
         const options = Array.from(cardDatalist.options);
         
-        // Find a match that specifically starts with what you typed
         const match = options.find(opt => opt.value.toLowerCase().startsWith(typedValue));
         
         if (match && match.value.toLowerCase() !== typedValue) {
-            // Optional: You can remove this line if you want to be able to type fully without interference
             // this.value = match.value; 
         }
     });
@@ -446,7 +438,7 @@
         
         recalculateTotal();
         saveToLocalStorage();
-        sortTable(); // Re-sort in case values changed
+        sortTable();
         document.getElementById('loading-overlay').style.display = "none";
         alert("Pricing update complete! Click 'Link & Save' if you want to push these new prices to your CSV.");
     }
@@ -482,7 +474,7 @@
         if (savedData) {
             localStorage.setItem('pokemonInventory_backup', savedData);
             const inventoryData = JSON.parse(savedData);
-            inventoryData.forEach(item => addRow(item.ref, item.set, item.code, item.name, item.loc, item.qty, item.uPrice || "0.00", item.tPrice || "0.00", false));
+            inventoryData.forEach(item => addRow(item.ref, item.set, item.code, item.name, item.loc, item.qty, item.uPrice || "0.00", item.tPrice || "0.00", false, false));
             applyFilters(); 
             recalculateTotal();
         }
@@ -544,7 +536,6 @@
             </td>
         `;
         
-        // Pushes the row to the top if atTop is true, otherwise appends to the bottom
         if (atTop) {
             tableBody.prepend(row);
         } else {
@@ -553,7 +544,7 @@
         
         if (shouldSave) {
             saveToLocalStorage();
-            sortTable(); // Sorts instantly if a filter is active
+            sortTable(); 
         }
     }
 
@@ -588,7 +579,7 @@
                         clearInputs();
                         saveToLocalStorage();
                         sortTable();
-                        if (fileHandle) linkAndSave(); // Green Button Triggers Save
+                        if (fileHandle) linkAndSave();
                         applyFilters();
                         return; 
                     }
@@ -607,70 +598,12 @@
             cancelEdit();
             saveToLocalStorage();
             sortTable();
-            if (fileHandle) linkAndSave(); // Green Button Triggers Save
+            if (fileHandle) linkAndSave(); 
             applyFilters(); 
         } else {
-            // The extra 'true' forces the card to the top
+            // Explicitly pushing the new row to the top
             addRow(ref, set, code, name, loc, qty, "0.00", "0.00", true, true);
-            if (fileHandle) linkAndSave(); // Green Button Triggers Save
-            clearInputs();
-        }
-    }
-    function addFromUI() {
-        const ref = document.getElementById('input-ref').value.trim();
-        const set = document.getElementById('input-set').value;
-        const code = document.getElementById('input-code').value;
-        const name = document.getElementById('input-name').value;
-        const loc = document.getElementById('input-location').value;
-        const qty = parseInt(document.getElementById('input-qty').value) || 1;
-
-        if (!name || !set) { alert("Please specify the Set and Card Name/Number."); return; }
-
-        if (ref !== "") {
-            const rows = document.querySelectorAll("#inventory-table tbody tr");
-            for (let row of rows) {
-                if (row === rowBeingEdited) continue; 
-                const cells = row.querySelectorAll("td");
-                if (cells[0].innerText === ref) {
-                    if (rowBeingEdited) {
-                        alert(`Cannot save: The Ref / SKU "${ref}" is already assigned to another card.`);
-                        return; 
-                    } else {
-                        const currentQty = parseInt(cells[5].innerText) || 0;
-                        const addedQty = parseInt(qty) || 1;
-                        cells[5].innerText = currentQty + addedQty;
-                        
-                        const unitPrice = parseFloat(cells[6].innerText) || 0;
-                        cells[7].innerText = (unitPrice * (currentQty + addedQty)).toFixed(2);
-                        
-                        alert(`Ref / SKU "${ref}" already exists! The quantity has been increased by ${addedQty}.`);
-                        clearInputs();
-                        saveToLocalStorage();
-                        sortTable();
-                        if (fileHandle) linkAndSave(); // Green Button Triggers Save
-                        applyFilters();
-                        return; 
-                    }
-                }
-            }
-        }
-
-        if (rowBeingEdited) {
-            const cells = rowBeingEdited.querySelectorAll("td");
-            cells[0].innerText = ref; cells[1].innerText = set; cells[2].innerText = code;
-            cells[3].innerText = name; cells[4].innerText = loc; cells[5].innerText = qty;
-            
-            const unitP = parseFloat(cells[6].innerText) || 0;
-            cells[7].innerText = (unitP * qty).toFixed(2);
-            
-            cancelEdit();
-            saveToLocalStorage();
-            sortTable();
-            if (fileHandle) linkAndSave(); // Green Button Triggers Save
-            applyFilters(); 
-        } else {
-            addRow(ref, set, code, name, loc, qty, "0.00", "0.00", true);
-            if (fileHandle) linkAndSave(); // Green Button Triggers Save
+            if (fileHandle) linkAndSave(); 
             clearInputs();
         }
     }
@@ -717,7 +650,6 @@
             row.remove(); 
             saveToLocalStorage();
             recalculateTotal();
-            // Deliberately skipped linkAndSave here to protect CSV from accidental deletions
         }
     }
 
@@ -727,7 +659,6 @@
             document.querySelector("#inventory-table tbody").innerHTML = '';
             localStorage.removeItem('pokemonInventory');
             recalculateTotal();
-            // Deliberately skipped linkAndSave here to protect CSV from intentional wipe
             alert("All data has been successfully deleted.");
         }
     }
@@ -783,7 +714,7 @@
                 results.data.forEach(row => {
                     let uPrice = row["Unit Val ($)"] || row["Unit Price"] || "0.00";
                     let tPrice = row["Total Val ($)"] || row["Total Price"] || "0.00";
-                    addRow(row["Ref / SKU"] || "", row["Set"] || "", row["Code"] || "", row["No. & Card Name"] || row["Card Name & No."] || "", row["Location"] || "", row["Qty"] || "1", uPrice, tPrice, false);
+                    addRow(row["Ref / SKU"] || "", row["Set"] || "", row["Code"] || "", row["No. & Card Name"] || row["Card Name & No."] || "", row["Location"] || "", row["Qty"] || "1", uPrice, tPrice, false, false);
                 });
                 
                 tableBody.style.display = "";
