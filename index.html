@@ -360,9 +360,19 @@
     // --- SMART PARTIAL MATCH AUTO-FILL ---
     document.getElementById('input-name').addEventListener('input', function() {
         const typedValue = this.value.toLowerCase();
+        // Only trigger if you have typed at least 2 characters to avoid "snapping" to 001 immediately
+        if (typedValue.length < 2) return; 
+
         const cardDatalist = document.getElementById('card-options');
-        const match = Array.from(cardDatalist.options).find(opt => opt.value.toLowerCase().includes(typedValue));
-        if (match) this.value = match.value;
+        const options = Array.from(cardDatalist.options);
+        
+        // Find a match that specifically starts with what you typed
+        const match = options.find(opt => opt.value.toLowerCase().startsWith(typedValue));
+        
+        if (match && match.value.toLowerCase() !== typedValue) {
+            // Optional: You can remove this line if you want to be able to type fully without interference
+            // this.value = match.value; 
+        }
     });
 
     // --- LIVE MARKET SCANNER ---
