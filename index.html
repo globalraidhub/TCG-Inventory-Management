@@ -556,6 +556,66 @@
             sortTable(); // Sorts instantly if a filter is active
         }
     }
+
+    function addFromUI() {
+        const ref = document.getElementById('input-ref').value.trim();
+        const set = document.getElementById('input-set').value;
+        const code = document.getElementById('input-code').value;
+        const name = document.getElementById('input-name').value;
+        const loc = document.getElementById('input-location').value;
+        const qty = parseInt(document.getElementById('input-qty').value) || 1;
+
+        if (!name || !set) { alert("Please specify the Set and Card Name/Number."); return; }
+
+        if (ref !== "") {
+            const rows = document.querySelectorAll("#inventory-table tbody tr");
+            for (let row of rows) {
+                if (row === rowBeingEdited) continue; 
+                const cells = row.querySelectorAll("td");
+                if (cells[0].innerText === ref) {
+                    if (rowBeingEdited) {
+                        alert(`Cannot save: The Ref / SKU "${ref}" is already assigned to another card.`);
+                        return; 
+                    } else {
+                        const currentQty = parseInt(cells[5].innerText) || 0;
+                        const addedQty = parseInt(qty) || 1;
+                        cells[5].innerText = currentQty + addedQty;
+                        
+                        const unitPrice = parseFloat(cells[6].innerText) || 0;
+                        cells[7].innerText = (unitPrice * (currentQty + addedQty)).toFixed(2);
+                        
+                        alert(`Ref / SKU "${ref}" already exists! The quantity has been increased by ${addedQty}.`);
+                        clearInputs();
+                        saveToLocalStorage();
+                        sortTable();
+                        if (fileHandle) linkAndSave(); // Green Button Triggers Save
+                        applyFilters();
+                        return; 
+                    }
+                }
+            }
+        }
+
+        if (rowBeingEdited) {
+            const cells = rowBeingEdited.querySelectorAll("td");
+            cells[0].innerText = ref; cells[1].innerText = set; cells[2].innerText = code;
+            cells[3].innerText = name; cells[4].innerText = loc; cells[5].innerText = qty;
+            
+            const unitP = parseFloat(cells[6].innerText) || 0;
+            cells[7].innerText = (unitP * qty).toFixed(2);
+            
+            cancelEdit();
+            saveToLocalStorage();
+            sortTable();
+            if (fileHandle) linkAndSave(); // Green Button Triggers Save
+            applyFilters(); 
+        } else {
+            // The extra 'true' forces the card to the top
+            addRow(ref, set, code, name, loc, qty, "0.00", "0.00", true, true);
+            if (fileHandle) linkAndSave(); // Green Button Triggers Save
+            clearInputs();
+        }
+    }
     function addFromUI() {
         const ref = document.getElementById('input-ref').value.trim();
         const set = document.getElementById('input-set').value;
