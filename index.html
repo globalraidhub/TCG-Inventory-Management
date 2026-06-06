@@ -163,8 +163,8 @@
         { id: "PAL", text: "Paldea Evolved (EN: PAL)", total: "193" },
         { id: "M4", text: "Ninja Spinner (JP: M4)", total: "106" },
         { id: "M3", text: "Nihil Zero (JP: M3)", total: "106" },
-        { id: "m1s", text: "Mega Symphonia (JP: M1s)", total: "063" },
-        { id: "m2a", text: "Mega Dream ex (JP: m2a)", total: "193" },
+        { id: "M1S", text: "Mega Symphonia (JP: M1s)", total: "063" },
+        { id: "M2A", text: "Mega Dream ex (JP: M2A)", total: "193" },
         { id: "M2", text: "Inferno X (JP: M2)", total: "106" },
         { id: "M1", text: "Mega Evolution (JP: M1)", total: "083" },
         { id: "SV10", text: "Glory of Team Rocket (JP: SV10)", total: "098" },
@@ -322,7 +322,8 @@
     // --- API FETCH LOGIC & AUTO-FILL ---
     document.getElementById('input-set').addEventListener('input', function() {
         const typedValue = this.value;
-        const matchedItem = database.find(item => item.text === typedValue);
+        // Updated: Ignores uppercase/lowercase so M2A and m2a both work perfectly
+        const matchedItem = database.find(item => item.text.toLowerCase() === typedValue.toLowerCase());
         const cardDatalist = document.getElementById('card-options');
         const nameInput = document.getElementById('input-name');
         
