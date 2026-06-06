@@ -564,19 +564,40 @@
             for (let row of rows) {
                 if (row === rowBeingEdited) continue; 
                 const cells = row.querySelectorAll("td");
+                
+                // IF REF ALREADY EXISTS
                 if (cells[0].innerText === ref) {
                     if (rowBeingEdited) {
                         alert(`Cannot save: The Ref / SKU "${ref}" is already assigned to another card.`);
                         return; 
                     } else {
+                        // 1. Overwrite and correct the text details
+                        cells[1].innerText = set;
+                        cells[2].innerText = code;
+                        
+                        // Ensure the smart name formatting still applies during an update
+                        const matchedItem = database.find(item => item.id === code || item.text.includes(code));
+                        let formattedName = name;
+                        if (matchedItem && matchedItem.total && !name.includes('/')) {
+                            const parts = name.split('-');
+                            const cardNo = parts[0].trim();
+                            if (/^\d+$/.test(cardNo)) {
+                                formattedName = `${cardNo}/${matchedItem.total} ${parts.slice(1).join('-').trim()}`;
+                            }
+                        }
+                        cells[3].innerText = formattedName;
+                        cells[4].innerText = loc;
+
+                        // 2. Add the quantities together
                         const currentQty = parseInt(cells[5].innerText) || 0;
                         const addedQty = parseInt(qty) || 1;
                         cells[5].innerText = currentQty + addedQty;
                         
+                        // 3. Update the total price
                         const unitPrice = parseFloat(cells[6].innerText) || 0;
                         cells[7].innerText = (unitPrice * (currentQty + addedQty)).toFixed(2);
                         
-                        alert(`Ref / SKU "${ref}" already exists! The quantity has been increased by ${addedQty}.`);
+                        alert(`Ref / SKU "${ref}" updated! Details were corrected and quantity increased by ${addedQty}.`);
                         clearInputs();
                         saveToLocalStorage();
                         sortTable();
@@ -587,6 +608,27 @@
                 }
             }
         }
+
+        if (rowBeingEdited) {
+            const cells = rowBeingEdited.querySelectorAll("td");
+            cells[0].innerText = ref; cells[1].innerText = set; cells[2].innerText = code;
+            cells[3].innerText = name; cells[4].innerText = loc; cells[5].innerText = qty;
+            
+            const unitP = parseFloat(cells[6].innerText) || 0;
+            cells[7].innerText = (unitP * qty).toFixed(2);
+            
+            cancelEdit();
+            saveToLocalStorage();
+            sortTable();
+            if (fileHandle) linkAndSave(); 
+            applyFilters(); 
+        } else {
+            // Explicitly pushing the new row to the top
+            addRow(ref, set, code, name, loc, qty, "0.00", "0.00", true, true);
+            if (fileHandle) linkAndSave(); 
+            clearInputs();
+        }
+    }
 
         if (rowBeingEdited) {
             const cells = rowBeingEdited.querySelectorAll("td");
