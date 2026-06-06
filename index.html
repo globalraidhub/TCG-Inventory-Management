@@ -514,7 +514,7 @@
     }
 
     // --- SECURE ADD & EDIT FUNCTIONS ---
-    function addRow(ref, set, code, name, loc, qty, unitPrice, total, shouldSave = true) {
+    function addRow(ref, set, code, name, loc, qty, unitPrice, total, shouldSave = true, atTop = false) {
         const tableBody = document.querySelector("#inventory-table tbody");
         const row = document.createElement("tr");
 
@@ -543,7 +543,13 @@
                 <button class="btn-delete" onclick="deleteRow(this)">Delete</button>
             </td>
         `;
-        tableBody.appendChild(row);
+        
+        // Pushes the row to the top if atTop is true, otherwise adds to the bottom
+        if (atTop) {
+            tableBody.prepend(row);
+        } else {
+            tableBody.appendChild(row);
+        }
         
         if (shouldSave) {
             saveToLocalStorage();
