@@ -541,12 +541,23 @@
     }
 
     function addFromUI() {
-        const ref = document.getElementById('input-ref').value.trim();
+        const ref = document.getElementById('input-ref').value;
         const set = document.getElementById('input-set').value;
         const code = document.getElementById('input-code').value;
         const name = document.getElementById('input-name').value;
-        const loc = document.getElementById('input-location').value;
-        const qty = parseInt(document.getElementById('input-qty').value) || 1;
+        const qty = document.getElementById('input-qty').value;
+        
+        // --- AUTO-LOCATION LOGIC ---
+        // If it's not Japanese (i.e., contains "(EN:"), it goes to B, otherwise A
+        let loc = document.getElementById('input-location').value;
+        if (!loc) { 
+            loc = set.includes("(EN:") ? "B" : "A";
+        }
+        
+        addRow(ref, set, code, name, loc, qty, "0.00", "0.00", true);
+        localStorage.setItem('inv', document.querySelector("tbody").innerHTML);
+        clearInputs();
+    }
 
         if (!name || !set) { alert("Please specify the Set and Card Name/Number."); return; }
 
