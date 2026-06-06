@@ -19,6 +19,7 @@
         .btn-audit { background-color: #f1c40f; color: #2c3e50; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-price { background-color: #2ecc71; color: #2c3e50; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; box-shadow: 0 0 10px rgba(46, 204, 113, 0.4); }
         .btn-clear { background-color: #7f8c8d; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-link-save { background-color: #d35400; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         
         .inventory-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 8px;}
         input, select { height: 40px; border: 1px solid #ddd; border-radius: 6px; padding: 0 10px; box-sizing: border-box;}
@@ -63,10 +64,10 @@
         <button class="btn-download" onclick="downloadCSV()">Master Backup</button>
         <button class="btn-audit" onclick="downloadEbayAudit()">eBay Audit Export</button>
         <button class="btn-price" onclick="refreshLivePrices()">🔄 Refresh Live Prices</button>
+        <button class="btn-link-save" onclick="linkAndSave()">📁 Link & Save Local File</button>
         <button class="btn-clear" onclick="clearAllData()">Wipe Data</button>
     </div>
     
-    <!-- CARD ENTRY ROW -->
     <div class="inventory-row">
         <input type="text" id="input-ref" placeholder="Ref / SKU" style="width: 100px;">
         
@@ -75,7 +76,7 @@
         
         <input type="text" id="input-code" placeholder="Code" style="width: 70px;">
 
-        <input list="card-options" type="text" id="input-name" placeholder="2. Type No. (e.g. 203/193)..." style="width: 250px;">
+        <input list="card-options" type="text" id="input-name" placeholder="2. Type No. or Name..." style="width: 250px;">
         <datalist id="card-options"></datalist>
         
         <input type="text" id="input-location" placeholder="Loc" style="width: 80px;">
@@ -85,7 +86,6 @@
         <button class="btn-cancel" id="cancel-edit-btn" onclick="cancelEdit()">Cancel Edit</button>
     </div>
 
-    <!-- TARGETED COLUMN FILTERS (image_7019a1.png Layout) -->
     <div class="filter-section">
         <strong>Filters:</strong>
         <input type="text" id="filter-ref" class="filter-input" placeholder="🔍 Ref / SKU">
@@ -98,7 +98,6 @@
         <button class="btn-clear-filters" onclick="clearFilters()">Clear Filters</button>
     </div>
 
-    <!-- INVENTORY TABLE -->
     <table id="inventory-table">
         <thead>
             <tr>
@@ -118,9 +117,8 @@
 </div>
 
 <script>
-    // Complete 86-Set Multilingual Dataset
+    // --- MASTER DATABASE ---
     const database = [
-        const database = [
         // English Sets
         { id: "CRI", text: "Chaos Rising (EN: CRI)", total: "110" },
         { id: "PFO", text: "Perfect Order (EN: PFO)", total: "115" },
@@ -167,9 +165,9 @@
         { id: "SV3", text: "Ruler of the Black Flame (JP: SV3)", total: "108" },
         { id: "SV2", text: "Clay Burst (JP: SV2)", total: "071" }
     ];
-    ];
 
     let rowBeingEdited = null; 
+    let fileHandle = null;
 
     // --- SETUP DATALISTS AND DROPDOWNS ---
     const setDatalist = document.getElementById('set-options');
@@ -194,7 +192,7 @@
         if (e.key === 'Enter') { e.preventDefault(); addFromUI(); }
     });
 
-    // --- GRANULAR FILTERING LOGIC (image_7019a1.png Columns) ---
+    // --- GRANULAR FILTERING LOGIC ---
     function applyFilters() {
         const refFilter = document.getElementById('filter-ref').value.toLowerCase();
         const setFilter = document.getElementById('filter-set').value;
@@ -239,7 +237,7 @@
     document.getElementById('filter-name').addEventListener('input', applyFilters);
     document.getElementById('filter-loc').addEventListener('input', applyFilters);
 
-    // --- API FETCH LOGIC & FIREWALL ---
+    // --- API FETCH LOGIC & AUTO-FILL ---
     document.getElementById('input-set').addEventListener('input', function() {
         const typedValue = this.value;
         const matchedItem = database.find(item => item.text === typedValue);
@@ -256,7 +254,7 @@
                 option.value = numStr; 
                 cardDatalist.appendChild(option);
             }
-            nameInput.placeholder = "2. Type No. (e.g. 203/193)...";
+            nameInput.placeholder = "2. Type No. or Name...";
             
             const isEnglish = matchedItem.text.includes("(EN:");
             
@@ -268,7 +266,6 @@
                         if (d.data && d.data.length > 0) {
                             cardDatalist.innerHTML = ''; 
                             
-                            // Advanced alphanumeric custom sorting
                             d.data.sort((a,b) => String(a.number).localeCompare(String(b.number), undefined, {numeric: true, sensitivity: 'base'}));
                             
                             d.data.forEach(card => {
@@ -285,8 +282,22 @@
         } else {
             document.getElementById('input-code').value = ''; 
             cardDatalist.innerHTML = '';
-            nameInput.placeholder = "2. Type No. (e.g. 203/193)...";
+            nameInput.placeholder = "2. Type No. or Name...";
         }
+    });
+
+    document.getElementById('input-set').addEventListener('blur', function() {
+        const typedValue = this.value;
+        const matchedItem = database.find(item => item.text === typedValue);
+        if (matchedItem) document.getElementById('input-code').value = matchedItem.id;
+    });
+
+    // --- SMART PARTIAL MATCH AUTO-FILL ---
+    document.getElementById('input-name').addEventListener('input', function() {
+        const typedValue = this.value.toLowerCase();
+        const cardDatalist = document.getElementById('card-options');
+        const match = Array.from(cardDatalist.options).find(opt => opt.value.toLowerCase().includes(typedValue));
+        if (match) this.value = match.value;
     });
 
     // --- LIVE MARKET SCANNER ---
@@ -309,8 +320,8 @@
                     rows.forEach(row => {
                         if (row.cells[1].innerText === fullSetName) {
                             const cardDetails = row.cells[3].innerText; 
-                            const cardNumRaw = cardDetails.split(" ")[0]; // Safely isolates "203/193" or "203"
-                            const cardNumStr = cardNumRaw.split("/")[0].replace(/^0+/, ''); // Converts "203/193" to API-matching "203"
+                            const cardNumRaw = cardDetails.split(" ")[0]; 
+                            const cardNumStr = cardNumRaw.split("/")[0].replace(/^0+/, ''); 
                             
                             const apiCard = data.data.find(c => String(c.number) === cardNumStr);
                             
@@ -338,6 +349,7 @@
         
         recalculateTotal();
         saveToLocalStorage();
+        if (fileHandle) linkAndSave();
         document.getElementById('loading-overlay').style.display = "none";
         alert("Pricing update complete!");
     }
@@ -380,23 +392,67 @@
     }
     document.addEventListener("DOMContentLoaded", loadFromLocalStorage);
 
-    // --- SECURE ADD & EDIT FUNCTIONS ---
-    function addRow(ref, set, code, name, loc, qty, uPrice = "0.00", tPrice = "0.00", triggerSave = true) {
-        const tbody = document.querySelector("#inventory-table tbody");
-        const tr = document.createElement("tr");
+    // --- OVERWRITE SAVE SYSTEM ---
+    async function linkAndSave() {
+        try {
+            if (!fileHandle) {
+                [fileHandle] = await window.showOpenFilePicker({
+                    types: [{ description: 'CSV File', accept: { 'text/csv': ['.csv'] } }],
+                });
+            }
+            let csvData = ["Ref / SKU,Set,Code,No. & Card Name,Location,Qty,Unit Val ($),Total Val ($)"];
+            document.querySelectorAll("#inventory-table tbody tr").forEach(row => {
+                let cols = row.querySelectorAll("td");
+                let rowData = [];
+                for (let i = 0; i < cols.length - 1; i++) rowData.push('"' + cols[i].innerText.replace(/"/g, '""') + '"');
+                csvData.push(rowData.join(","));
+            });
+            const writable = await fileHandle.createWritable();
+            await writable.write(csvData.join("\n"));
+            await writable.close();
+            // Optional: Provide subtle feedback instead of an alert for every single row addition
+            console.log("Synchronised directly to your local file.");
+        } catch (err) {
+            console.error("Auto-save prevented or cancelled by user.", err);
+        }
+    }
 
-        tr.innerHTML = `
-            <td>${ref}</td><td>${set}</td><td>${code}</td><td>${name}</td><td>${loc}</td><td>${qty}</td>
-            <div style="display:none;"></div>
-            <td class="val-col">${uPrice}</td><td class="val-col">${tPrice}</td>
+    // --- SECURE ADD & EDIT FUNCTIONS ---
+    function addRow(ref, set, code, name, loc, qty, unitPrice, total, shouldSave = true) {
+        const tableBody = document.querySelector("#inventory-table tbody");
+        const row = document.createElement("tr");
+
+        const matchedItem = database.find(item => item.id === code || item.text.includes(code));
+        let formattedName = name;
+
+        if (matchedItem && matchedItem.total && !name.includes('/')) {
+            const parts = name.split('-');
+            const cardNo = parts[0].trim();
+            if (/^\d+$/.test(cardNo)) {
+                formattedName = `${cardNo}/${matchedItem.total} ${parts.slice(1).join('-').trim()}`;
+            }
+        }
+
+        row.innerHTML = `
+            <td>${ref}</td>
+            <td>${set}</td>
+            <td>${code}</td>
+            <td>${formattedName}</td>
+            <td>${loc}</td>
+            <td>${qty}</td>
+            <td>${unitPrice}</td>
+            <td>${total}</td>
             <td>
                 <button class="btn-edit" onclick="editRow(this)">Edit</button>
-                <button class="btn-delete" onclick="deleteRow(this)">Del</button>
+                <button class="btn-delete" onclick="deleteRow(this)">Delete</button>
             </td>
         `;
-        tbody.appendChild(tr);
-        if (triggerSave) saveToLocalStorage();
-        applyFilters(); 
+        tableBody.appendChild(row);
+        
+        if (shouldSave) {
+            saveToLocalStorage();
+            if (fileHandle) linkAndSave();
+        }
     }
 
     function addFromUI() {
@@ -429,6 +485,7 @@
                         alert(`Ref / SKU "${ref}" already exists! The quantity has been increased by ${addedQty}.`);
                         clearInputs();
                         saveToLocalStorage();
+                        if (fileHandle) linkAndSave();
                         applyFilters();
                         return; 
                     }
@@ -446,6 +503,7 @@
             
             cancelEdit();
             saveToLocalStorage();
+            if (fileHandle) linkAndSave();
             applyFilters(); 
         } else {
             addRow(ref, set, code, name, loc, qty, "0.00", "0.00");
@@ -470,14 +528,6 @@
         document.getElementById('cancel-edit-btn').style.display = "inline-block";
     }
 
-    document.getElementById('input-set').addEventListener('blur', function() {
-        const typedValue = this.value;
-        const matchedItem = database.find(item => item.text === typedValue);
-        if (matchedItem) {
-            document.getElementById('input-code').value = matchedItem.id;
-        }
-    });
-
     function cancelEdit() {
         rowBeingEdited = null;
         const addBtn = document.getElementById('main-action-btn');
@@ -501,7 +551,8 @@
         
         if(confirm(`Are you sure you want to delete this specific card?\n\n${cardName}`)) {
             row.remove(); 
-            saveToLocalStorage(); 
+            saveToLocalStorage();
+            if (fileHandle) linkAndSave();
         }
     }
 
@@ -511,6 +562,7 @@
             document.querySelector("#inventory-table tbody").innerHTML = '';
             localStorage.removeItem('pokemonInventory');
             recalculateTotal();
+            if (fileHandle) linkAndSave();
             alert("All data has been successfully deleted.");
         }
     }
@@ -560,6 +612,7 @@
                     addRow(row["Ref / SKU"] || "", row["Set"] || "", row["Code"] || "", row["No. & Card Name"] || row["Card Name & No."] || "", row["Location"] || "", row["Qty"] || "1", uPrice, tPrice, false);
                 });
                 saveToLocalStorage(); 
+                if (fileHandle) linkAndSave();
                 applyFilters();
             }
         });
