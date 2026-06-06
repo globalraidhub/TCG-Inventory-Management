@@ -208,13 +208,34 @@
         filterSetDropdown.appendChild(option2);
     });
 
+    // --- KEYBOARD SHORTCUTS ---
+    document.getElementById('input-set').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const typedValue = this.value.toLowerCase().trim();
+            if (!typedValue) return;
+
+            // Find the best match by checking the ID (e.g. "m2a") or the text
+            const match = database.find(item => 
+                item.id.toLowerCase() === typedValue || 
+                item.text.toLowerCase().includes(typedValue)
+            );
+
+            if (match) {
+                this.value = match.text; // Auto-fill the exact full text
+                this.dispatchEvent(new Event('input')); // Trigger the API fetch and Code auto-fill
+                document.getElementById('input-name').focus(); // Instantly jump cursor to the next box
+            }
+        }
+    });
+
     document.getElementById('input-location').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') { e.preventDefault(); addFromUI(); }
     });
+    
     document.getElementById('input-qty').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') { e.preventDefault(); addFromUI(); }
     });
-
     // --- SORTING LOGIC ---
     function sortTable() {
         const tbody = document.querySelector("#inventory-table tbody");
