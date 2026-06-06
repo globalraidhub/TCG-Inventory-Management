@@ -544,7 +544,7 @@
             </td>
         `;
         
-        // Pushes the row to the top if atTop is true, otherwise adds to the bottom
+        // Pushes the row to the top if atTop is true, otherwise appends to the bottom
         if (atTop) {
             tableBody.prepend(row);
         } else {
@@ -556,7 +556,6 @@
             sortTable(); // Sorts instantly if a filter is active
         }
     }
-
     function addFromUI() {
         const ref = document.getElementById('input-ref').value.trim();
         const set = document.getElementById('input-set').value;
