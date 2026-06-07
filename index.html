@@ -179,7 +179,6 @@
         .ebay-info-panel a { color: #3498db; }
 
         /* ── Responsive ── */
-        /* ── Responsive ── */
         @media (max-width: 768px) {
             body { padding: 16px; }
             .container { padding: 16px; }
@@ -190,7 +189,6 @@
 </head>
 <body>
 
-<!-- Loading Overlay -->
 <div id="loading-overlay">
     <div class="spinner"></div>
     <div id="loading-text">Fetching Live Market Prices...</div>
@@ -199,7 +197,6 @@
     <button id="abort-btn" onclick="abortPriceRefresh()">Abort</button>
 </div>
 
-<!-- Delete Confirm Modal -->
 <div class="modal-overlay" id="delete-modal">
     <div class="modal">
         <h3>Delete Card?</h3>
@@ -211,7 +208,6 @@
     </div>
 </div>
 
-<!-- Wipe Confirm Modal -->
 <div class="modal-overlay" id="wipe-modal">
     <div class="modal">
         <h3>⚠️ Wipe All Data?</h3>
@@ -223,10 +219,8 @@
     </div>
 </div>
 
-<!-- Toast Container -->
 <div id="toast-container"></div>
 
-<!-- Undo Bar -->
 <div id="undo-bar">
     <span id="undo-text">Card deleted.</span>
     <button onclick="undoDelete()">Undo</button>
@@ -248,7 +242,6 @@
         <button class="btn btn-clear"     onclick="openWipeModal()">Wipe Data</button>
     </div>
 
-    <!-- eBay Last Sold Info Panel -->
     <div class="ebay-info-panel" id="ebay-info-panel">
         <strong>ℹ️ eBay Last Sold — How it works:</strong>
         Opening an eBay sold search in a new tab is the most reliable approach for a static HTML app.
@@ -266,7 +259,7 @@
         <input type="text"   id="input-code"     placeholder="Code"                  style="width:70px;">
         <input list="card-options" type="text" id="input-name" placeholder="2. Type No. or Name..." style="width:250px;">
         <datalist id="card-options"></datalist>
-        <input type="text"   id="input-location" placeholder="Loc"                   style="width:80px;">
+        <input type="text"   id="input-location" placeholder="Loc"                    style="width:80px;">
         <input type="number" id="input-qty"      value="1" min="1"                   style="width:60px;">
         <button class="btn-add"    id="main-action-btn"  onclick="addFromUI()">Add to Stock</button>
         <button class="btn-cancel" id="cancel-edit-btn"  onclick="cancelEdit()">Cancel Edit</button>
@@ -323,49 +316,49 @@ const RATE_LIMIT_MS = 800;
 const MAX_CARD_NUM  = 300;
 
 const DATABASE = [
-    { id: "CRI",   text: "Chaos Rising (EN: CRI)",              total: "086" },
-    { id: "POR",   text: "Perfect Order (EN: POR)",             total: "088" },
-    { id: "ASC",   text: "Ascended Heroes (EN: ASC)",           total: "217" },
-    { id: "PFL",   text: "Phantasmal Flames (EN: PFL)",         total: "130" },
-    { id: "MEG",   text: "Mega Evolution (EN: MEG)",            total: "132" },
-    { id: "BLB",   text: "Black Bolt (EN: BLB)",                total: "80"  },
-    { id: "WHF",   text: "White Flare (EN: WHF)",               total: "106" },
-    { id: "DRI",   text: "Destined Rivals (EN: DRI)",           total: "182" },
-    { id: "JTG",   text: "Journey Together (EN: JTG)",          total: "143" },
-    { id: "PRE",   text: "Prismatic Evolutions (EN: PRE)",      total: "175" },
-    { id: "SSP",   text: "Surging Sparks (EN: SSP)",            total: "191" },
-    { id: "SCR",   text: "Stellar Crown (EN: SCR)",             total: "142" },
-    { id: "SFA",   text: "Shrouded Fable (EN: SFA)",            total: "064" },
-    { id: "TWM",   text: "Twilight Masquerade (EN: TWM)",       total: "167" },
-    { id: "TEF",   text: "Temporal Forces (EN: TEF)",           total: "162" },
-    { id: "PAF",   text: "Paldean Fates (EN: PAF)",             total: "091" },
-    { id: "PAR",   text: "Paradox Rift (EN: PAR)",              total: "182" },
-    { id: "MEW",   text: "Pokémon 151 (EN: MEW)",               total: "165" },
-    { id: "OBF",   text: "Obsidian Flames (EN: OBF)",           total: "197" },
-    { id: "PAL",   text: "Paldea Evolved (EN: PAL)",            total: "193" },
-    { id: "M4",    text: "Ninja Spinner (JP: M4)",              total: "106" },
-    { id: "M3",    text: "Nihil Zero (JP: M3)",                 total: "106" },
-    { id: "M1S",   text: "Mega Symphonia (JP: M1s)",            total: "063" },
-    { id: "M2A",   text: "Mega Dream ex (JP: M2A)",             total: "193" },
-    { id: "M2",    text: "Inferno X (JP: M2)",                  total: "106" },
-    { id: "M1",    text: "Mega Evolution (JP: M1)",             total: "083" },
-    { id: "SV10",  text: "Glory of Team Rocket (JP: SV10)",     total: "098" },
-    { id: "SV11b", text: "Black Bolt (JP: SV11B)",              total: "086" },
-    { id: "SV11w", text: "White Flare (JP: SV11W)",             total: "086" },
-    { id: "SV8a",  text: "Terastal Festival (JP: SV8a)",        total: "187" },
-    { id: "SV8",   text: "Super Electric Breaker (JP: SV8)",    total: "106" },
-    { id: "SV7.5", text: "Terastal Dream (JP: SV7.5)",          total: "115" },
-    { id: "SV7",   text: "Paradise Dragona (JP: SV7)",          total: "064" },
-    { id: "SV6.5", text: "Stellar Miracle (JP: SV6.5)",         total: "102" },
-    { id: "SV6a",  text: "Night Wanderer (JP: SV6a)",           total: "064" },
-    { id: "SV6",   text: "Mask of Change (JP: SV6)",            total: "101" },
-    { id: "SV4",   text: "Cyber Judge (JP: SV4)",               total: "071" },
-    { id: "SV4a",  text: "Shiny Treasure ex (JP: SV4a)",        total: "190" },
-    { id: "SV3.5", text: "Ancient Roar (JP: SV3.5)",            total: "066" },
-    { id: "SV2a",  text: "Pokémon Card 151 (JP: SV2a)",         total: "165" },
-    { id: "SV3",   text: "Ruler of the Black Flame (JP: SV3)",  total: "108" },
-    { id: "SV2",   text: "Clay Burst (JP: SV2)",                total: "071" },
-    { id: "SV1a",  text: "Triplet Beat (JP: SV1a)",             total: "073" },
+    { id: "CRI",   text: "Chaos Rising (EN: CRI)",             total: "086" },
+    { id: "POR",   text: "Perfect Order (EN: POR)",            total: "088" },
+    { id: "ASC",   text: "Ascended Heroes (EN: ASC)",          total: "217" },
+    { id: "PFL",   text: "Phantasmal Flames (EN: PFL)",        total: "130" },
+    { id: "MEG",   text: "Mega Evolution (EN: MEG)",           total: "132" },
+    { id: "BLB",   text: "Black Bolt (EN: BLB)",               total: "80"  },
+    { id: "WHF",   text: "White Flare (EN: WHF)",              total: "106" },
+    { id: "DRI",   text: "Destined Rivals (EN: DRI)",          total: "182" },
+    { id: "JTG",   text: "Journey Together (EN: JTG)",         total: "143" },
+    { id: "PRE",   text: "Prismatic Evolutions (EN: PRE)",     total: "175" },
+    { id: "SSP",   text: "Surging Sparks (EN: SSP)",           total: "191" },
+    { id: "SCR",   text: "Stellar Crown (EN: SCR)",            total: "142" },
+    { id: "SFA",   text: "Shrouded Fable (EN: SFA)",           total: "064" },
+    { id: "TWM",   text: "Twilight Masquerade (EN: TWM)",      total: "167" },
+    { id: "TEF",   text: "Temporal Forces (EN: TEF)",          total: "162" },
+    { id: "PAF",   text: "Paldean Fates (EN: PAF)",            total: "091" },
+    { id: "PAR",   text: "Paradox Rift (EN: PAR)",             total: "182" },
+    { id: "MEW",   text: "Pokémon 151 (EN: MEW)",              total: "165" },
+    { id: "OBF",   text: "Obsidian Flames (EN: OBF)",          total: "197" },
+    { id: "PAL",   text: "Paldea Evolved (EN: PAL)",           total: "193" },
+    { id: "M4",    text: "Ninja Spinner (JP: M4)",             total: "106" },
+    { id: "M3",    text: "Nihil Zero (JP: M3)",                total: "106" },
+    { id: "M1S",   text: "Mega Symphonia (JP: M1s)",           total: "063" },
+    { id: "M2A",   text: "Mega Dream ex (JP: M2A)",            total: "193" },
+    { id: "M2",    text: "Inferno X (JP: M2)",                 total: "106" },
+    { id: "M1",    text: "Mega Evolution (JP: M1)",            total: "083" },
+    { id: "SV10",  text: "Glory of Team Rocket (JP: SV10)",    total: "098" },
+    { id: "SV11b", text: "Black Bolt (JP: SV11B)",             total: "086" },
+    { id: "SV11w", text: "White Flare (JP: SV11W)",            total: "086" },
+    { id: "SV8a",  text: "Terastal Festival (JP: SV8a)",       total: "187" },
+    { id: "SV8",   text: "Super Electric Breaker (JP: SV8)",   total: "106" },
+    { id: "SV7.5", text: "Terastal Dream (JP: SV7.5)",         total: "115" },
+    { id: "SV7",   text: "Paradise Dragona (JP: SV7)",         total: "064" },
+    { id: "SV6.5", text: "Stellar Miracle (JP: SV6.5)",        total: "102" },
+    { id: "SV6a",  text: "Night Wanderer (JP: SV6a)",          total: "064" },
+    { id: "SV6",   text: "Mask of Change (JP: SV6)",           total: "101" },
+    { id: "SV4",   text: "Cyber Judge (JP: SV4)",              total: "071" },
+    { id: "SV4a",  text: "Shiny Treasure ex (JP: SV4a)",       total: "190" },
+    { id: "SV3.5", text: "Ancient Roar (JP: SV3.5)",           total: "066" },
+    { id: "SV2a",  text: "Pokémon Card 151 (JP: SV2a)",        total: "165" },
+    { id: "SV3",   text: "Ruler of the Black Flame (JP: SV3)", total: "108" },
+    { id: "SV2",   text: "Clay Burst (JP: SV2)",               total: "071" },
+    { id: "SV1a",  text: "Triplet Beat (JP: SV1a)",            total: "073" },
 ];
 
 // Lookup Maps for O(1) access
@@ -406,29 +399,36 @@ function lookupSet(text, code) {
     return null;
 }
 
-/** Format a card name to include the set total (e.g. "001 Bulbasaur" → "001/165 Bulbasaur") */
+/** Utility to pad numbers safely without destroying letter prefixes (e.g. TG05) */
+function padToThree(str) {
+    if (!str) return '000';
+    const match = String(str).match(/^(\D*)(\d+)(\D*)$/);
+    if (match) {
+        return `${match[1]}${match[2].padStart(3, '0')}${match[3]}`;
+    }
+    return String(str).padStart(3, '0');
+}
+
+/** Format a card name to strictly enforce the 3-digit structure "001/165 Bulbasaur" */
 function formatCardName(name, setText, code) {
     if (!name) return name;
     const match = lookupSet(setText, code);
 
-    // Case 1: name already contains a slash — normalise the card number side only
-    // Keep the stored total exactly as-is (e.g. "131") — don't replace with DB total
-    // which may differ (e.g. PRE DB has 175 but secret/promo cards are numbered /131)
-    const slashMatch = name.match(/^(\d+)\/(\d+)\s*[-–]?\s*(.*)/);
+    // Case 1: name already contains a slash
+    const slashMatch = name.match(/^([^\/\s]+)\/([^\/\s]+)\s*[-–]?\s*(.*)/);
     if (slashMatch) {
-        const storedTotal = slashMatch[2];                       // e.g. "131" or "088"
-        const padLen      = String(storedTotal).length;          // match digit count of total
-        const paddedNum   = String(parseInt(slashMatch[1], 10)).padStart(padLen, '0');
-        return `${paddedNum}/${storedTotal} ${slashMatch[3]}`.trim();
+        const paddedNum   = padToThree(slashMatch[1]);
+        const paddedTotal = padToThree(slashMatch[2]);
+        return `${paddedNum}/${paddedTotal} ${slashMatch[3]}`.trim();
     }
 
     // Case 2: no slash — needs full formatting from bare number e.g. "53 Charizard" -> "053/088 Charizard"
     if (!match?.total) return name;
-    const padLen   = String(match.total).length;                 // use full length, not stripped
-    const numMatch = name.match(/^(\d+)[\s\-]*(.*)/);
+    const numMatch = name.match(/^([A-Za-z0-9]+)[\s\-]*(.*)/);
     if (!numMatch) return name;
-    const paddedNum = String(parseInt(numMatch[1], 10)).padStart(padLen, '0');
-    return `${paddedNum}/${match.total} ${numMatch[2]}`.trim();
+    const paddedNum = padToThree(numMatch[1]);
+    const paddedTotal = padToThree(match.total);
+    return `${paddedNum}/${paddedTotal} ${numMatch[2]}`.trim();
 }
 
 /** Pick the best available market price from a TCGPlayer prices object */
@@ -494,8 +494,6 @@ function loadInventory() {
         const saved = localStorage.getItem('pokemonInventory');
         if (saved) {
             const parsed = JSON.parse(saved);
-            // Migrate: add id if missing, add ebayLastSold if missing,
-            // and normalize legacy card names like "53 Charizard" -> "053/088 Charizard"
             state.inventory = parsed.map(item => {
                 const migrated = {
                     ebayLastSold: null,
@@ -525,13 +523,13 @@ function matchesFilters(item) {
     const unit  = (item.unitPrice || 0).toFixed(2);
 
     return (
-        (!f.ref   || String(item.ref  || '').toLowerCase().includes(f.ref))   &&
-        (!f.set   || item.set === f.set)                                        &&
+        (!f.ref   || String(item.ref  || '').toLowerCase().includes(f.ref))    &&
+        (!f.set   || item.set === f.set)                                       &&
         (!f.code  || String(item.code || '').toLowerCase().includes(f.code))   &&
         (!f.name  || String(item.name || '').toLowerCase().includes(f.name))   &&
         (!f.loc   || String(item.loc  || '').toLowerCase().includes(f.loc))    &&
         (!f.qty   || String(item.qty  || '').includes(f.qty))                  &&
-        (!f.unit  || unit.includes(f.unit))                                     &&
+        (!f.unit  || unit.includes(f.unit))                                    &&
         (!f.total || total.includes(f.total))
     );
 }
@@ -642,12 +640,10 @@ function render() {
 }
 
 function renderTotals(visible) {
-    // Full portfolio total (all inventory, regardless of filter)
     const portfolioTotal = state.inventory.reduce((sum, i) => sum + getLineTotal(i), 0);
     document.getElementById('total-portfolio-display').textContent =
         `Total Value: $${portfolioTotal.toFixed(2)}`;
 
-    // Filtered view total (only if filtered)
     const filteredTotalEl = document.getElementById('filtered-total-display');
     if (hasActiveFilters() && visible.length > 0) {
         const filteredSum = visible.reduce((sum, i) => sum + getLineTotal(i), 0);
@@ -692,9 +688,7 @@ function addFromUI() {
 
     const formattedName = formatCardName(name, set, code);
 
-    // ── Editing an existing row ──
     if (state.editingId) {
-        // Check for ref collision with another card
         if (ref !== '') {
             const collision = state.inventory.find(i => i.ref === ref && i.id !== state.editingId);
             if (collision) {
@@ -715,7 +709,6 @@ function addFromUI() {
         return;
     }
 
-    // ── Check if Ref already exists → merge qty ──
     if (ref !== '') {
         const existing = state.inventory.find(i => i.ref === ref);
         if (existing) {
@@ -733,7 +726,6 @@ function addFromUI() {
         }
     }
 
-    // ── New card ──
     state.inventory.unshift({
         id: uid(), ref, set,
         code: code.toUpperCase(),
@@ -769,7 +761,7 @@ function startEdit(id) {
     document.getElementById('cancel-edit-btn').style.display = 'inline-block';
     document.getElementById('inventory-row').classList.add('editing-mode');
 
-    render(); // Highlight the row being edited
+    render();
     document.getElementById('input-ref').focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -785,7 +777,6 @@ function cancelEdit() {
     render();
 }
 
-// ── Delete with Undo ──
 function openDeleteModal(id) {
     const item = state.inventory.find(i => i.id === id);
     if (!item) return;
@@ -835,7 +826,6 @@ function undoDelete() {
     showToast('Delete undone.', 'info');
 }
 
-// ── Wipe Modal ──
 function openWipeModal()  { document.getElementById('wipe-modal').classList.add('visible'); }
 function closeWipeModal() { document.getElementById('wipe-modal').classList.remove('visible'); }
 function confirmWipe() {
@@ -862,7 +852,6 @@ async function refreshLivePrices() {
     document.getElementById('loading-overlay').classList.add('visible');
     document.getElementById('refresh-btn').disabled = true;
 
-    // Group items by set name for batching
     const setMap = new Map();
     for (const item of englishItems) {
         if (!setMap.has(item.set)) setMap.set(item.set, []);
@@ -889,11 +878,9 @@ async function refreshLivePrices() {
             const data = await response.json();
 
             if (data.data?.length > 0) {
-                // Build a lookup map by card number for this set
                 const priceMap = new Map(data.data.map(c => [String(c.number), c.tcgplayer?.prices]));
 
                 for (const item of setMap.get(fullSetName)) {
-                    // Extract card number from name like "001/165 Bulbasaur" or "1/165 Bulbasaur"
                     const rawNum    = item.name.split('/')[0].replace(/^0+/, '').trim();
                     const prices    = priceMap.get(rawNum);
                     const unitPrice = getBestMarketPrice(prices);
@@ -1013,40 +1000,42 @@ document.getElementById('input-set').addEventListener('input', function() {
 
     if (matched) {
         document.getElementById('input-code').value = matched.id;
-        const isEnglish = matched.text.includes('(EN:');
 
-        // Pre-fill numeric options immediately
+        // Pre-fill numeric options immediately applying the strict padding
         cardDatalist.innerHTML = '';
         const frag = document.createDocumentFragment();
+        const totalPadded = padToThree(matched.total);
         for (let i = 1; i <= MAX_CARD_NUM; i++) {
             const opt = document.createElement('option');
-            opt.value = String(i).padStart(3, '0');
+            opt.value = `${padToThree(String(i))}/${totalPadded}`;
             frag.appendChild(opt);
         }
         cardDatalist.appendChild(frag);
         nameInput.placeholder = '2. Type No. or Name...';
 
-        if (isEnglish) {
-            const baseName = matched.text.split(' (')[0];
-            fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:"${encodeURIComponent(baseName)}"&pageSize=300&select=name,number,set`)
-                .then(r => r.json())
-                .then(d => {
-                    if (!d.data?.length) return;
-                    cardDatalist.innerHTML = '';
-                    const apiFragment = document.createDocumentFragment();
-                    d.data
-                        .sort((a, b) => String(a.number).localeCompare(String(b.number), undefined, { numeric: true }))
-                        .forEach(card => {
-                            const total = card.set?.printedTotal ?? '';
-                            const num   = total ? `${card.number}/${total}` : card.number;
-                            const opt = document.createElement('option');
-                            opt.value = `${num} - ${card.name}`;
-                            apiFragment.appendChild(opt);
-                        });
-                    cardDatalist.appendChild(apiFragment);
-                })
-                .catch(() => {});
-        }
+        // Unlock API fetch for ALL sets (not just English) to try and capture names
+        const baseName = matched.text.split(' (')[0].replace('Pokémon Card 151', '151').replace('Pokémon 151', '151');
+        
+        fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:"${encodeURIComponent(baseName)}"&pageSize=300&select=name,number,set`)
+            .then(r => r.json())
+            .then(d => {
+                if (!d.data?.length) return;
+                cardDatalist.innerHTML = '';
+                const apiFragment = document.createDocumentFragment();
+                d.data
+                    .sort((a, b) => String(a.number).localeCompare(String(b.number), undefined, { numeric: true }))
+                    .forEach(card => {
+                        const total = card.set?.printedTotal ?? matched.total;
+                        const paddedNum = padToThree(card.number);
+                        const paddedTotal = padToThree(total);
+                        const num   = `${paddedNum}/${paddedTotal}`;
+                        const opt = document.createElement('option');
+                        opt.value = `${num} - ${card.name}`;
+                        apiFragment.appendChild(opt);
+                    });
+                cardDatalist.appendChild(apiFragment);
+            })
+            .catch(() => {});
     } else {
         document.getElementById('input-code').value = '';
         cardDatalist.innerHTML = '';
@@ -1156,7 +1145,6 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                 const uPrice = parseFloat(row['Unit Val ($)'] || row['Unit Price'] || '0') || 0;
                 const tPrice = parseFloat(row['Total Val ($)'] || row['Total Price'] || '0') || 0;
 
-                // Use tPrice to infer unitPrice if qty is known
                 const qty   = parseInt(row['Qty'] || '1') || 1;
                 const unitP = uPrice > 0 ? uPrice : (qty > 0 ? tPrice / qty : 0);
 
@@ -1206,43 +1194,16 @@ function clearInputs() {
 // ═══════════════════════════════════════════════════════
 // EBAY LAST SOLD LOOKUP
 // ═══════════════════════════════════════════════════════
-
-/**
- * Opens an eBay completed/sold listings search for a card.
- * 
- * WHY THIS APPROACH:
- * eBay's Marketplace Insights API (the only one with sold prices) has been
- * "limited release" since 2020 — no new developer access. The Buy Browse API
- * only returns active listings. All eBay REST APIs block CORS from browsers
- * without a backend server holding an OAuth token.
- *
- * The cleanest solution for a static HTML app is to:
- * 1. Open a pre-built eBay sold search URL in a new tab (instant, no API key).
- * 2. Let you manually note/enter the last sold price back into the app.
- *
- * If you later add a backend (Node/Python proxy), swap openEbaySearch()
- * for a fetch() to your own server which calls the Marketplace Insights API.
- */
 function lookupEbayLastSold(id) {
     const item = state.inventory.find(i => i.id === id);
     if (!item) return;
 
-    // Build a clean search query: card name without the number prefix
-    // e.g. "053/088 Charizard ex" → "Charizard ex Pokemon Card"
-    // Keep the card number in the search — e.g. "Jolteon 029/131" is a much tighter eBay query
     const cardNum = item.name.match(/^(\d+\/\d+)/)?.[1] || '';
     const nameWithoutNum = item.name.replace(/^\d+\/\d+\s*[-–]?\s*/, '').trim();
-    // Build query: "Jolteon 029/131" — no set code, no filler text
     const query = [nameWithoutNum, cardNum].filter(Boolean).join(' ').trim();
 
-    // eBay sold/completed listings URL
-    // LH_Sold=1 & LH_Complete=1 = sold/completed listings only
-    // _sop=13 = sort by most recently sold
-    // LH_PrefLoc=1 = items located in UK only
-    // _fcid=3 = eBay.co.uk site (GB)
     const ebayUrl = `https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Sold=1&LH_Complete=1&_sop=13&LH_PrefLoc=1&_fcid=3`;
 
-    // Show the info panel on first use
     const panel = document.getElementById('ebay-info-panel');
     if (!panel.classList.contains('visible')) {
         panel.classList.add('visible');
@@ -1250,8 +1211,6 @@ function lookupEbayLastSold(id) {
 
     window.open(ebayUrl, '_blank', 'noopener,noreferrer');
 
-    // Prompt user to enter the price they found
-    // Small delay so the tab opens first
     setTimeout(() => {
         showPriceEntryToast(id, nameWithoutNum);
     }, 600);
@@ -1260,7 +1219,6 @@ function lookupEbayLastSold(id) {
 function showPriceEntryToast(id, cardName) {
     const container = document.getElementById('toast-container');
 
-    // Remove any existing price entry toast
     const existing = document.getElementById('price-entry-toast');
     if (existing) existing.remove();
 
