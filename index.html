@@ -410,10 +410,6 @@ EXTERNAL_DATABASE.forEach(item => dbMap.set(item.id, item));
 const DATABASE = Array.from(dbMap.values());
 const PRELOADED_CARDS = { ...CORE_PRELOADED, ...EXTERNAL_PRELOADED };
 
-// Lookup Maps for O(1) access
-const DB_BY_TEXT = new Map(DATABASE.map(i => [i.text.toLowerCase(), i]));
-const DB_BY_ID   = new Map(DATABASE.map(i => [i.id.toLowerCase(),   i]));
-
 // ═══════════════════════════════════════════════════════
 // APPLICATION STATE
 // ═══════════════════════════════════════════════════════
@@ -578,22 +574,27 @@ function padToThreeJS(setNum, total) {
 }
 
 // ═══════════════════════════════════════════════════════
-// HELPERS
+// SMART SEARCH & HELPERS
 // ═══════════════════════════════════════════════════════
 
 function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-function lookupSet(text, code) {
-    if (text)  { const m = DB_BY_TEXT.get(text.toLowerCase()); if (m) return m; }
-    if (code)  { const m = DB_BY_ID.get(String(code).toLowerCase()); if (m) return m; }
-    return null;
+// The new smart lookup searches by exact text, code, OR the clean name part without parenthesis
+function findSet(typedValue) {
+    if (!typedValue) return null;
+    const lower = typedValue.toLowerCase().trim();
+    return DATABASE.find(i => {
+        const full = i.text.toLowerCase();
+        const nameOnly = full.split(' (')[0].trim();
+        return full === lower || nameOnly === lower || i.id.toLowerCase() === lower;
+    });
 }
 
 function formatCardName(name, setText, code) {
     if (!name) return name;
-    const match = lookupSet(setText, code);
+    const match = findSet(setText) || findSet(code);
 
     const slashMatch = name.match(/^([^\/\s]+)\/([^\/\s]+)\s*[-–]?\s*(.*)/);
     if (slashMatch) {
@@ -1133,7 +1134,7 @@ function clearFilters() {
 }
 
 // ═══════════════════════════════════════════════════════
-// SET / CARD DATALISTS
+// SET / CARD DATALISTS WITH SMART SEARCH
 // ═══════════════════════════════════════════════════════
 function populateSetDatalist() {
     const setDatalist       = document.getElementById('set-options');
@@ -1158,9 +1159,7 @@ function populateSetDatalist() {
 document.getElementById('input-set').addEventListener('keydown', function(e) {
     if (e.key !== 'Enter') return;
     e.preventDefault();
-    const typed = this.value.toLowerCase().trim();
-    if (!typed) return;
-    const match = DATABASE.find(i => i.id.toLowerCase() === typed || i.text.toLowerCase().includes(typed));
+    const match = findSet(this.value);
     if (match) {
         this.value = match.text;
         this.dispatchEvent(new Event('input'));
@@ -1169,8 +1168,7 @@ document.getElementById('input-set').addEventListener('keydown', function(e) {
 });
 
 document.getElementById('input-set').addEventListener('input', function() {
-    const typedValue = this.value;
-    const matched    = DB_BY_TEXT.get(typedValue.toLowerCase());
+    const matched = findSet(this.value);
     const cardDatalist = document.getElementById('card-options');
     const nameInput    = document.getElementById('input-name');
 
@@ -1231,8 +1229,11 @@ document.getElementById('input-set').addEventListener('input', function() {
 });
 
 document.getElementById('input-set').addEventListener('blur', function() {
-    const match = DB_BY_TEXT.get(this.value.toLowerCase());
-    if (match) document.getElementById('input-code').value = match.id;
+    const match = findSet(this.value);
+    if (match) {
+        this.value = match.text;
+        document.getElementById('input-code').value = match.id;
+    }
 });
 
 ['input-location', 'input-qty'].forEach(id => {
