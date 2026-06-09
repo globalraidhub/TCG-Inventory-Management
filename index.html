@@ -7,6 +7,7 @@
     
     <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js" charset="UTF-8"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         /* ── Base Reset ── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -237,7 +238,7 @@
 
     <div class="action-buttons">
         <input type="file" id="csv-file-input" accept=".csv" style="display:none;">
-        <input type="file" id="db-generator-input" multiple accept=".csv" style="display:none;">
+        <input type="file" id="db-generator-input" multiple accept=".csv, .xlsx, .xls" style="display:none;">
 
         <button class="btn btn-upload"    onclick="document.getElementById('csv-file-input').click()">Upload Inventory CSV</button>
         <button class="btn btn-download"  onclick="downloadCSV()">Master Backup</button>
@@ -245,7 +246,7 @@
         <button class="btn btn-price"     id="refresh-btn" onclick="refreshLivePrices()">🔄 Refresh Live Prices</button>
         <button class="btn btn-link-save" onclick="linkAndSave()">📁 Link & Save Local File</button>
         <button class="btn btn-clear"     onclick="openWipeModal()">Wipe Data</button>
-        <button class="btn btn-build-db"  onclick="document.getElementById('db-generator-input').click()">🛠️ Build DB from CSVs</button>
+        <button class="btn btn-build-db"  onclick="document.getElementById('db-generator-input').click()">🛠️ Build DB from Excel / CSV</button>
     </div>
 
     <div class="ebay-info-panel" id="ebay-info-panel">
@@ -321,7 +322,6 @@
 const RATE_LIMIT_MS = 800;
 const MAX_CARD_NUM  = 300;
 
-// This guarantees your original 44 sets are NEVER wiped.
 const CORE_DATABASE = [
     { id: "CRI",   text: "Chaos Rising (EN: CRI)",             total: "086" },
     { id: "POR",   text: "Perfect Order (EN: POR)",            total: "088" },
@@ -426,14 +426,14 @@ let undoTimer   = null;
 let abortRefresh = false;
 
 // ═══════════════════════════════════════════════════════
-// DATABASE GENERATOR LOGIC (NOW SAVES DIRECTLY TO BROWSER)
+// DATABASE GENERATOR LOGIC (CSV AND EXCEL SUPPORT!)
 // ═══════════════════════════════════════════════════════
 document.getElementById('db-generator-input').addEventListener('change', async function(e) {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
     document.getElementById('loading-text').textContent = 'Building Master Database...';
-    document.getElementById('loading-progress').textContent = `Processing ${files.length} files.`;
+    document.getElementById('loading-progress').textContent = `Processing file(s)...`;
     document.getElementById('loading-subtext').textContent = 'Saving directly to your browser memory...';
     document.getElementById('abort-btn').style.display = 'none';
     document.getElementById('loading-overlay').classList.add('visible');
@@ -443,86 +443,152 @@ document.getElementById('db-generator-input').addEventListener('change', async f
 
     for (let file of files) {
         try {
-            const text = await file.text();
-            const lines = text.split('\n');
-            
-            let startIdx = 0;
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].trim().startsWith('Set #')) {
-                    startIdx = i;
-                    break;
-                }
-            }
-            
-            const csvText = lines.slice(startIdx).join('\n');
-            
-            let setName = "";
-            let setCode = "";
-            let lang = "";
+            if (file.name.toLowerCase().match(/\.xlsx?$/)) {
+                // EXCEL FILE HANDLING
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
 
-            if (startIdx > 0) {
-                let parts = lines[0].split(',');
-                setName = parts[0].trim();
-                if (parts.length > 1 && parts[1].trim()) {
-                    let codeParts = parts[1].trim().split(/\s+/);
-                    setCode = codeParts[0];
-                    if(codeParts.length > 1) {
-                        lang = codeParts[1];
+                for (let sheetName of workbook.SheetNames) {
+                    const sheet = workbook.Sheets[sheetName];
+                    const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
+                    if (rawData.length === 0) continue;
+
+                    let startIdx = 0;
+                    for (let i = 0; i < rawData.length; i++) {
+                        if (rawData[i] && String(rawData[i][0]).trim() === 'Set #') {
+                            startIdx = i;
+                            break;
+                        }
+                    }
+
+                    let setName = sheetName;
+                    let setCode = sheetName;
+                    let lang = "";
+
+                    if (startIdx > 0 && rawData[0]) {
+                        let titleCell = String(rawData[0][0] || "").trim();
+                        let codeCell = String(rawData[0][1] || "").trim();
+                        if (titleCell && titleCell !== 'Set #') setName = titleCell;
+                        if (codeCell) {
+                            let codeParts = codeCell.split(/\s+/);
+                            setCode = codeParts[0];
+                            if (codeParts.length > 1) lang = codeParts[1];
+                        }
+                    }
+
+                    let cleanSetName = setName.replace(/\s*\([^)]*\)/, '').trim();
+                    let displayText = lang ? `${cleanSetName} (${lang}: ${setCode})` : `${cleanSetName} (${setCode})`;
+
+                    const tableData = XLSX.utils.sheet_to_json(sheet, { range: startIdx, raw: false, defval: "" });
+
+                    let maxDenom = 0;
+                    tableData.forEach(row => {
+                        let s = String(row['Set #'] || '');
+                        if (s.includes('/')) {
+                            let d = parseInt(s.split('/')[1].replace(/\D/g, ''));
+                            if (d > maxDenom) maxDenom = d;
+                        }
+                    });
+                    if (maxDenom === 0) maxDenom = tableData.length;
+                    let totalStr = String(maxDenom).padStart(3, '0');
+
+                    dbArray.push({ id: setCode, text: displayText, total: totalStr });
+
+                    let cardsList = [];
+                    tableData.forEach(row => {
+                        let rawNum = String(row['Set #'] || '').trim();
+                        if (!rawNum) return;
+
+                        let name = String(row['Name'] || '');
+                        name = name.replace(/"/g, ''); 
+                        name = name.replace(/([a-zA-Z])(EX|GX|V|VMAX|VSTAR|BREAK)\b/g, '$1 $2').trim();
+
+                        let formattedNum = padToThreeJS(rawNum, totalStr);
+                        if (name) cardsList.push(`${formattedNum} - ${name}`);
+                        else cardsList.push(`${formattedNum} - `);
+                    });
+                    preloadedCards[setCode] = cardsList;
+                }
+            } else {
+                // ORIGINAL CSV FILE HANDLING
+                const text = await file.text();
+                const lines = text.split('\n');
+                
+                let startIdx = 0;
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].trim().startsWith('Set #')) {
+                        startIdx = i;
+                        break;
                     }
                 }
-            }
-            
-            if (!setName) {
-                setName = file.name.replace(/^(Pokedex_Master\.xlsx|Set_List\.xlsx)\s*-\s*/i, '').replace(/\.csv$/i, '').trim();
-            }
-            
-            if (!setCode) {
-                let match = setName.match(/\(([^)]+)\)/); 
-                if (match) {
-                    setCode = match[1];
-                } else {
-                    let words = setName.split(/\s+/);
-                    if (words.length === 1) setCode = words[0].substring(0,3).toUpperCase();
-                    else setCode = words.map(w => w[0]).join('').substring(0,4).toUpperCase();
-                }
-            }
+                
+                const csvText = lines.slice(startIdx).join('\n');
+                
+                let setName = "";
+                let setCode = "";
+                let lang = "";
 
-            let cleanSetName = setName.replace(/\s*\([^)]*\)/, '').trim();
-            let displayText = lang ? `${cleanSetName} (${lang}: ${setCode})` : `${cleanSetName} (${setCode})`;
-            
-            const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-            
-            let maxDenom = 0;
-            parsed.data.forEach(row => {
-                let s = row['Set #'] || '';
-                if (s.includes('/')) {
-                    let d = parseInt(s.split('/')[1].replace(/\D/g, ''));
-                    if (d > maxDenom) maxDenom = d;
+                if (startIdx > 0) {
+                    let parts = lines[0].split(',');
+                    setName = parts[0].trim();
+                    if (parts.length > 1 && parts[1].trim()) {
+                        let codeParts = parts[1].trim().split(/\s+/);
+                        setCode = codeParts[0];
+                        if(codeParts.length > 1) {
+                            lang = codeParts[1];
+                        }
+                    }
                 }
-            });
-            if (maxDenom === 0) maxDenom = parsed.data.length;
-            let totalStr = String(maxDenom).padStart(3, '0');
-            
-            dbArray.push({ id: setCode, text: displayText, total: totalStr });
-            
-            let cardsList = [];
-            parsed.data.forEach(row => {
-                let rawNum = row['Set #'];
-                if (!rawNum) return;
                 
-                let name = row['Name'] || '';
-                name = name.replace(/"/g, ''); 
-                name = name.replace(/([a-zA-Z])(EX|GX|V|VMAX|VSTAR|BREAK)\b/g, '$1 $2').trim();
-                
-                let formattedNum = padToThreeJS(rawNum, totalStr);
-                if (name) {
-                    cardsList.push(`${formattedNum} - ${name}`);
-                } else {
-                    cardsList.push(`${formattedNum} - `); 
+                if (!setName) {
+                    setName = file.name.replace(/^(Pokedex_Master\.xlsx|Set_List\.xlsx)\s*-\s*/i, '').replace(/\.csv$/i, '').trim();
                 }
-            });
-            
-            preloadedCards[setCode] = cardsList;
+                
+                if (!setCode) {
+                    let match = setName.match(/\(([^)]+)\)/); 
+                    if (match) {
+                        setCode = match[1];
+                    } else {
+                        let words = setName.split(/\s+/);
+                        if (words.length === 1) setCode = words[0].substring(0,3).toUpperCase();
+                        else setCode = words.map(w => w[0]).join('').substring(0,4).toUpperCase();
+                    }
+                }
+
+                let cleanSetName = setName.replace(/\s*\([^)]*\)/, '').trim();
+                let displayText = lang ? `${cleanSetName} (${lang}: ${setCode})` : `${cleanSetName} (${setCode})`;
+                
+                const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+                
+                let maxDenom = 0;
+                parsed.data.forEach(row => {
+                    let s = row['Set #'] || '';
+                    if (s.includes('/')) {
+                        let d = parseInt(s.split('/')[1].replace(/\D/g, ''));
+                        if (d > maxDenom) maxDenom = d;
+                    }
+                });
+                if (maxDenom === 0) maxDenom = parsed.data.length;
+                let totalStr = String(maxDenom).padStart(3, '0');
+                
+                dbArray.push({ id: setCode, text: displayText, total: totalStr });
+                
+                let cardsList = [];
+                parsed.data.forEach(row => {
+                    let rawNum = row['Set #'];
+                    if (!rawNum) return;
+                    
+                    let name = row['Name'] || '';
+                    name = name.replace(/"/g, ''); 
+                    name = name.replace(/([a-zA-Z])(EX|GX|V|VMAX|VSTAR|BREAK)\b/g, '$1 $2').trim();
+                    
+                    let formattedNum = padToThreeJS(rawNum, totalStr);
+                    if (name) cardsList.push(`${formattedNum} - ${name}`);
+                    else cardsList.push(`${formattedNum} - `); 
+                });
+                
+                preloadedCards[setCode] = cardsList;
+            }
         } catch (err) {
             console.error(`Error processing ${file.name}:`, err);
         }
@@ -533,9 +599,7 @@ document.getElementById('db-generator-input').addEventListener('change', async f
         localStorage.setItem('CUSTOM_POKEMON_CARDS', JSON.stringify(preloadedCards));
         document.getElementById('loading-overlay').classList.remove('visible');
         showToast('Database built successfully! Reloading app...', 'success', 2000);
-        setTimeout(() => {
-            window.location.reload();
-        }, 1500);
+        setTimeout(() => { window.location.reload(); }, 1500);
     } catch(err) {
         document.getElementById('loading-overlay').classList.remove('visible');
         alert("Error saving database. Your browser's local storage might be full.");
@@ -581,7 +645,7 @@ function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-// The new smart lookup searches by exact text, code, OR the clean name part without parenthesis
+// Lookup by exact text, code, or clean name
 function findSet(typedValue) {
     if (!typedValue) return null;
     const lower = typedValue.toLowerCase().trim();
@@ -1142,7 +1206,9 @@ function populateSetDatalist() {
     const fragment1         = document.createDocumentFragment();
     const fragment2         = document.createDocumentFragment();
 
-    for (const item of DATABASE) {
+    const sortedDB = DATABASE.sort((a,b) => a.text.localeCompare(b.text));
+
+    for (const item of sortedDB) {
         const opt1 = document.createElement('option');
         opt1.value = item.text;
         fragment1.appendChild(opt1);
