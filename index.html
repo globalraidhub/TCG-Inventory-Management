@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pokemon Inventory Management</title>
     
-    <script src="pokemon_database.js" onerror="console.warn('External DB not found, loading Core DB only.')"></script>
-
     <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js" charset="UTF-8"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
@@ -198,7 +196,7 @@
     <div class="spinner"></div>
     <div id="loading-text">Fetching Live Market Prices...</div>
     <div id="loading-progress"></div>
-    <div style="font-size:13px;margin-top:8px;color:#ccc;">(Respecting API rate limits to safeguard data sync)</div>
+    <div style="font-size:13px;margin-top:8px;color:#ccc;" id="loading-subtext">(Respecting API rate limits to safeguard data sync)</div>
     <button id="abort-btn" onclick="abortProcess()">Abort</button>
 </div>
 
@@ -318,18 +316,19 @@
 
 <script>
 // ═══════════════════════════════════════════════════════
-// CONSTANTS & CORE DATABASE (YOUR HARDCODED PROGRESS)
+// CONSTANTS & CORE DATABASE 
 // ═══════════════════════════════════════════════════════
 const RATE_LIMIT_MS = 800;
 const MAX_CARD_NUM  = 300;
 
+// This guarantees your original 44 sets are NEVER wiped.
 const CORE_DATABASE = [
     { id: "CRI",   text: "Chaos Rising (EN: CRI)",             total: "086" },
     { id: "POR",   text: "Perfect Order (EN: POR)",            total: "088" },
     { id: "ASC",   text: "Ascended Heroes (EN: ASC)",          total: "217" },
     { id: "PFL",   text: "Phantasmal Flames (EN: PFL)",        total: "130" },
     { id: "MEG",   text: "Mega Evolution (EN: MEG)",           total: "132" },
-    { id: "MEP",   text: "Mega Evolution Promos (EN: MEP)",    total: "079" }, // Fixed from Symphonia
+    { id: "MEP",   text: "Mega Evolution Promos (EN: MEP)",    total: "079" }, 
     { id: "BLB",   text: "Black Bolt (EN: BLB)",               total: "80"  },
     { id: "WHF",   text: "White Flare (EN: WHF)",              total: "106" },
     { id: "DRI",   text: "Destined Rivals (EN: DRI)",          total: "182" },
@@ -389,12 +388,21 @@ const CORE_PRELOADED = {
 };
 
 // ═══════════════════════════════════════════════════════
-// MERGE WITH EXTERNAL DATABASE GENERATED FROM TOOL
+// LOAD EXTERNAL DATABASE FROM LOCAL STORAGE
 // ═══════════════════════════════════════════════════════
-const EXTERNAL_DATABASE  = window.EXTERNAL_DATABASE || [];
-const EXTERNAL_PRELOADED = window.EXTERNAL_PRELOADED || {};
+let EXTERNAL_DATABASE = [];
+let EXTERNAL_PRELOADED = {};
 
-// Merge databases dynamically. If the generated file finds an identical code, it safely overwrites to prevent duplicates!
+try {
+    const savedDb = localStorage.getItem('CUSTOM_POKEMON_DB');
+    const savedCards = localStorage.getItem('CUSTOM_POKEMON_CARDS');
+    if (savedDb) EXTERNAL_DATABASE = JSON.parse(savedDb);
+    if (savedCards) EXTERNAL_PRELOADED = JSON.parse(savedCards);
+} catch(e) {
+    console.warn("Could not load custom database.");
+}
+
+// Safely merge databases (External overwrites Core if codes match)
 const dbMap = new Map();
 CORE_DATABASE.forEach(item => dbMap.set(item.id, item));
 EXTERNAL_DATABASE.forEach(item => dbMap.set(item.id, item));
@@ -422,7 +430,7 @@ let undoTimer   = null;
 let abortRefresh = false;
 
 // ═══════════════════════════════════════════════════════
-// DATABASE GENERATOR LOGIC
+// DATABASE GENERATOR LOGIC (NOW SAVES DIRECTLY TO BROWSER)
 // ═══════════════════════════════════════════════════════
 document.getElementById('db-generator-input').addEventListener('change', async function(e) {
     const files = Array.from(e.target.files);
@@ -430,6 +438,7 @@ document.getElementById('db-generator-input').addEventListener('change', async f
 
     document.getElementById('loading-text').textContent = 'Building Master Database...';
     document.getElementById('loading-progress').textContent = `Processing ${files.length} files.`;
+    document.getElementById('loading-subtext').textContent = 'Saving directly to your browser memory...';
     document.getElementById('abort-btn').style.display = 'none';
     document.getElementById('loading-overlay').classList.add('visible');
 
@@ -455,7 +464,6 @@ document.getElementById('db-generator-input').addEventListener('change', async f
             let setCode = "";
             let lang = "";
 
-            // Capture the Set Name, Set Code, and Language Prefix (e.g. "EN" or "JP") if available
             if (startIdx > 0) {
                 let parts = lines[0].split(',');
                 setName = parts[0].trim();
@@ -484,7 +492,6 @@ document.getElementById('db-generator-input').addEventListener('change', async f
             }
 
             let cleanSetName = setName.replace(/\s*\([^)]*\)/, '').trim();
-            // Automatically output the dropdown format to perfectly match existing sets (e.g. "Mega Evolution Promos (EN: MEP)")
             let displayText = lang ? `${cleanSetName} (${lang}: ${setCode})` : `${cleanSetName} (${setCode})`;
             
             const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
@@ -525,18 +532,18 @@ document.getElementById('db-generator-input').addEventListener('change', async f
         }
     }
     
-    let fileContent = `// Auto-Generated Master Pokemon Database\nwindow.EXTERNAL_DATABASE = ${JSON.stringify(dbArray, null, 4)};\n\nwindow.EXTERNAL_PRELOADED = ${JSON.stringify(preloadedCards, null, 4)};`;
-    
-    const blob = new Blob([fileContent], { type: 'text/javascript' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'pokemon_database.js';
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    document.getElementById('loading-overlay').classList.remove('visible');
-    showToast('Database built! Put the new file in the same folder as this HTML.', 'success', 6000);
+    try {
+        localStorage.setItem('CUSTOM_POKEMON_DB', JSON.stringify(dbArray));
+        localStorage.setItem('CUSTOM_POKEMON_CARDS', JSON.stringify(preloadedCards));
+        document.getElementById('loading-overlay').classList.remove('visible');
+        showToast('Database built successfully! Reloading app...', 'success', 2000);
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
+    } catch(err) {
+        document.getElementById('loading-overlay').classList.remove('visible');
+        alert("Error saving database. Your browser's local storage might be full.");
+    }
 });
 
 function padToThreeJS(setNum, total) {
