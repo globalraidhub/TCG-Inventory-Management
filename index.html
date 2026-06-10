@@ -260,14 +260,16 @@
     </div>
 
     <div class="inventory-row" id="inventory-row">
-        <input type="text"   id="input-ref"      placeholder="Ref / SKU"             style="width:100px;">
-        <input list="set-options" id="input-set" placeholder="1. Type Set Name..."   style="width:230px;">
+        <input type="text"   id="input-ref"      placeholder="Ref / SKU"             style="width:95px;">
+        <input list="set-options" id="input-set" placeholder="1. Type Set Name..."   style="width:215px;">
         <datalist id="set-options"></datalist>
         <input type="text"   id="input-code"     placeholder="Code"                  style="width:70px;">
-        <input list="card-options" type="text" id="input-name" placeholder="2. Type No. or Name..." style="width:250px;">
+        <input list="card-options" type="text" id="input-name" placeholder="2. Type No. or Name..." style="width:235px;">
         <datalist id="card-options"></datalist>
-        <input type="text"   id="input-location" placeholder="Loc"                    style="width:80px;">
+        <input type="text"   id="input-location" placeholder="Loc"                    style="width:70px;">
         <input type="number" id="input-qty"      value="1" min="1"                   style="width:60px;">
+        <input type="number" id="input-value"    placeholder="Unit £" step="0.01" min="0" style="width:80px;">
+        
         <button class="btn-add"    id="main-action-btn"  onclick="addFromUI()">Add to Stock</button>
         <button class="btn-cancel" id="cancel-edit-btn"  onclick="cancelEdit()">Cancel Edit</button>
     </div>
@@ -322,6 +324,7 @@
 const RATE_LIMIT_MS = 800;
 const MAX_CARD_NUM  = 300;
 
+// This guarantees your original 44 sets are NEVER wiped.
 const CORE_DATABASE = [
     { id: "CRI",   text: "Chaos Rising (EN: CRI)",             total: "086" },
     { id: "POR",   text: "Perfect Order (EN: POR)",            total: "088" },
@@ -402,7 +405,7 @@ try {
     console.warn("Could not load custom database.");
 }
 
-// Safely merge databases (External overwrites Core if codes match)
+// Safely merge databases
 const dbMap = new Map();
 CORE_DATABASE.forEach(item => dbMap.set(item.id, item));
 EXTERNAL_DATABASE.forEach(item => dbMap.set(item.id, item));
@@ -510,7 +513,7 @@ document.getElementById('db-generator-input').addEventListener('change', async f
                     preloadedCards[setCode] = cardsList;
                 }
             } else {
-                // ORIGINAL CSV FILE HANDLING
+                // CSV FILE HANDLING
                 const text = await file.text();
                 const lines = text.split('\n');
                 
@@ -738,6 +741,12 @@ function loadInventory() {
                     id: item.id || uid()
                 };
                 migrated.name = formatCardName(migrated.name || '', migrated.set || '', migrated.code || '');
+                
+                // NEW: Automatically sync eBay price to Unit Price if missing
+                if (migrated.ebayLastSold && (!migrated.unitPrice || migrated.unitPrice === 0)) {
+                    migrated.unitPrice = parseFloat(migrated.ebayLastSold.replace(/[^0-9.]/g, '')) || 0;
+                }
+
                 return migrated;
             });
             saveInventory();
@@ -916,6 +925,7 @@ function addFromUI() {
     const name = document.getElementById('input-name').value.trim();
     const loc  = document.getElementById('input-location').value.trim();
     const qty  = Math.max(1, parseInt(document.getElementById('input-qty').value) || 1);
+    const unitPrice = parseFloat(document.getElementById('input-value').value) || 0;
 
     if (!name || !set) {
         showToast('Please specify both a Set and a Card Name/Number.', 'warning');
@@ -934,8 +944,7 @@ function addFromUI() {
         }
         const item = state.inventory.find(i => i.id === state.editingId);
         if (item) {
-            const unitP = item.unitPrice || 0;
-            Object.assign(item, { ref, set, code: code.toUpperCase(), name: formattedName, loc, qty, unitPrice: unitP });
+            Object.assign(item, { ref, set, code: code.toUpperCase(), name: formattedName, loc, qty, unitPrice });
         }
         cancelEdit();
         saveInventory();
@@ -949,6 +958,7 @@ function addFromUI() {
         const existing = state.inventory.find(i => i.ref === ref);
         if (existing) {
             existing.qty += qty;
+            if (unitPrice > 0) existing.unitPrice = unitPrice;
             if (set && name) {
                 existing.set  = set;
                 existing.code = code.toUpperCase();
@@ -969,7 +979,7 @@ function addFromUI() {
         code: code.toUpperCase(),
         name: formattedName,
         loc, qty,
-        unitPrice: 0,
+        unitPrice: unitPrice,
         ebayLastSold: null,
     });
 
@@ -992,6 +1002,7 @@ function startEdit(id) {
     document.getElementById('input-name').value     = item.name    || '';
     document.getElementById('input-location').value = item.loc     || '';
     document.getElementById('input-qty').value      = item.qty     || 1;
+    document.getElementById('input-value').value    = item.unitPrice ? item.unitPrice.toFixed(2) : '';
 
     const addBtn = document.getElementById('main-action-btn');
     addBtn.textContent = 'Save Edit';
@@ -1302,7 +1313,7 @@ document.getElementById('input-set').addEventListener('blur', function() {
     }
 });
 
-['input-location', 'input-qty'].forEach(id => {
+['input-location', 'input-qty', 'input-value'].forEach(id => {
     document.getElementById(id).addEventListener('keypress', function(e) {
         if (e.key === 'Enter') { e.preventDefault(); addFromUI(); }
     });
@@ -1396,8 +1407,14 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                 const set  = row['Set'] || '';
                 if (!name && !set) { skipped++; continue; }
 
-                const uPrice = parseFloat(row['Unit Val (£)'] || row['Unit Price'] || '0') || 0;
-                const tPrice = parseFloat(row['Total Val (£)'] || row['Total Price'] || '0') || 0;
+                // Safe fallback for reading imported pricing values
+                const ebayRaw = row['eBay Last Sold'] || null;
+                const ebayParsed = ebayRaw ? parseFloat(ebayRaw.replace(/[^0-9.]/g, '')) : 0;
+                
+                let uPrice = parseFloat(row['Unit Val (£)'] || row['Unit Val ($)'] || row['Unit Price'] || '0') || 0;
+                if (uPrice === 0 && ebayParsed > 0) uPrice = ebayParsed;
+
+                const tPrice = parseFloat(row['Total Val (£)'] || row['Total Val ($)'] || row['Total Price'] || '0') || 0;
 
                 const qty   = parseInt(row['Qty'] || '1') || 1;
                 const unitP = uPrice > 0 ? uPrice : (qty > 0 ? tPrice / qty : 0);
@@ -1411,7 +1428,7 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                     loc:          row['Location'] || '',
                     qty,
                     unitPrice:    unitP,
-                    ebayLastSold: row['eBay Last Sold'] || null,
+                    ebayLastSold: ebayRaw,
                 });
                 imported++;
             }
@@ -1436,8 +1453,9 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
 // UTILITIES
 // ═══════════════════════════════════════════════════════
 function clearInputs() {
-    ['input-ref','input-set','input-code','input-name','input-location'].forEach(id => {
-        document.getElementById(id).value = '';
+    ['input-ref','input-set','input-code','input-name','input-location', 'input-value'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = '';
     });
     document.getElementById('input-qty').value = 1;
     document.getElementById('card-options').innerHTML = '';
@@ -1492,7 +1510,7 @@ function showPriceEntryToast(id, cardName) {
 
     const input = document.createElement('input');
     input.type = 'number';
-    input.placeholder = '$ price';
+    input.placeholder = '£ price';
     input.step = '0.01';
     input.min = '0';
     input.style.cssText = 'flex:1;height:32px;font-size:13px;background:#3a3a3a;border:1px solid #555;color:#fff;border-radius:4px;padding:0 8px;';
@@ -1514,6 +1532,7 @@ function showPriceEntryToast(id, cardName) {
         const item = state.inventory.find(i => i.id === id);
         if (item) {
             item.ebayLastSold = `£${val.toFixed(2)}`;
+            item.unitPrice = val; // NEW: Set Unit Value to the manual eBay price entered
             saveInventory();
             render();
         }
