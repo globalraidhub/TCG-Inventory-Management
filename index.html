@@ -233,7 +233,7 @@
 <div class="container">
     <div class="header-section">
         <h2>Pokemon Inventory Management</h2>
-        <div class="portfolio-value" id="total-portfolio-display">Total Value: $0.00</div>
+        <div class="portfolio-value" id="total-portfolio-display">Total Value: £0.00</div>
     </div>
 
     <div class="action-buttons">
@@ -883,7 +883,7 @@ function renderTotals(visible) {
     const filteredTotalEl = document.getElementById('filtered-total-display');
     if (hasActiveFilters() && visible.length > 0) {
         const filteredSum = visible.reduce((sum, i) => sum + getLineTotal(i), 0);
-        filteredTotalEl.textContent = `Filtered View: $${filteredSum.toFixed(2)}`;
+        filteredTotalEl.textContent = `Filtered View: £${filteredSum.toFixed(2)}`;
     } else {
         filteredTotalEl.textContent = '';
     }
@@ -1323,7 +1323,7 @@ function inventoryToCSVRows() {
 
 function downloadCSV() {
     if (state.inventory.length === 0) { showToast('Nothing to export.', 'warning'); return; }
-    const header = '"Ref / SKU","Set","Code","No. & Card Name","Location","Qty","Unit Val ($)","Total Val ($)","eBay Last Sold"';
+    const header = '"Ref / SKU","Set","Code","No. & Card Name","Location","Qty","Unit Val (£)","Total Val (£)","eBay Last Sold"';
     const rows   = [header, ...inventoryToCSVRows()];
     triggerDownload(rows.join('\n'), 'Pokemon_Inventory_Master.csv');
     showToast('Master CSV downloaded.');
@@ -1359,7 +1359,7 @@ async function linkAndSave() {
                 types: [{ description: 'CSV File', accept: { 'text/csv': ['.csv'] } }],
             });
         }
-        const header  = '"Ref / SKU","Set","Code","No. & Card Name","Location","Qty","Unit Val ($)","Total Val ($)","eBay Last Sold"';
+        const header  = '"Ref / SKU","Set","Code","No. & Card Name","Location","Qty","Unit Val (£)","Total Val (£)","eBay Last Sold"';
         const content = [header, ...inventoryToCSVRows()].join('\n');
         const writable = await state.fileHandle.createWritable();
         await writable.write(content);
@@ -1396,8 +1396,8 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                 const set  = row['Set'] || '';
                 if (!name && !set) { skipped++; continue; }
 
-                const uPrice = parseFloat(row['Unit Val ($)'] || row['Unit Price'] || '0') || 0;
-                const tPrice = parseFloat(row['Total Val ($)'] || row['Total Price'] || '0') || 0;
+                const uPrice = parseFloat(row['Unit Val (£)'] || row['Unit Price'] || '0') || 0;
+                const tPrice = parseFloat(row['Total Val (£)'] || row['Total Price'] || '0') || 0;
 
                 const qty   = parseInt(row['Qty'] || '1') || 1;
                 const unitP = uPrice > 0 ? uPrice : (qty > 0 ? tPrice / qty : 0);
