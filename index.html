@@ -878,7 +878,7 @@ function render() {
 function renderTotals(visible) {
     const portfolioTotal = state.inventory.reduce((sum, i) => sum + getLineTotal(i), 0);
     document.getElementById('total-portfolio-display').textContent =
-        `Total Value: $${portfolioTotal.toFixed(2)}`;
+        `Total Value: £${portfolioTotal.toFixed(2)}`;
 
     const filteredTotalEl = document.getElementById('filtered-total-display');
     if (hasActiveFilters() && visible.length > 0) {
