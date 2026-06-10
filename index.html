@@ -233,7 +233,7 @@
 <div class="container">
     <div class="header-section">
         <h2>Pokemon Inventory Management</h2>
-        <div class="portfolio-value" id="total-portfolio-display">Total Value: $0.00</div>
+        <div class="portfolio-value" id="total-portfolio-display">Total Value: £0.00</div>
     </div>
 
     <div class="action-buttons">
@@ -278,9 +278,9 @@
             <option value="default">Sort By: None</option>
             <option value="qty-desc">Qty: High to Low</option>
             <option value="qty-asc">Qty: Low to High</option>
-            <option value="total-desc">Total $: High to Low</option>
-            <option value="total-asc">Total $: Low to High</option>
-            <option value="unit-desc">Unit $: High to Low</option>
+            <option value="total-desc">Total £: High to Low</option>
+            <option value="total-asc">Total £: Low to High</option>
+            <option value="unit-desc">Unit £: High to Low</option>
             <option value="set-asc">Set: A to Z</option>
             <option value="set-desc">Set: Z to A</option>
             <option value="name-asc">Name: A to Z</option>
@@ -291,8 +291,8 @@
         <input type="text" id="filter-name"  class="filter-input" placeholder="🔍 Name/No."    style="flex:2;min-width:150px;">
         <input type="text" id="filter-loc"   class="filter-input" placeholder="🔍 Loc"         style="max-width:80px;">
         <input type="text" id="filter-qty"   class="filter-input" placeholder="🔍 Qty"         style="max-width:70px;">
-        <input type="text" id="filter-unit"  class="filter-input" placeholder="🔍 Unit $"      style="max-width:80px;">
-        <input type="text" id="filter-total" class="filter-input" placeholder="🔍 Total $"     style="max-width:80px;">
+        <input type="text" id="filter-unit"  class="filter-input" placeholder="🔍 Unit £"      style="max-width:80px;">
+        <input type="text" id="filter-total" class="filter-input" placeholder="🔍 Total £"     style="max-width:80px;">
         <button class="btn-clear-filters" onclick="clearFilters()">Clear</button>
     </div>
 
@@ -307,7 +307,7 @@
                 <tr>
                     <th>Ref / SKU</th><th>Set</th><th>Code</th>
                     <th>No. & Card Name</th><th>Location</th><th>Qty</th>
-                    <th>Unit Val ($)</th><th>Total Val ($)</th><th>eBay Last Sold</th><th>Actions</th>
+                    <th>Unit Val (£)</th><th>Total Val (£)</th><th>eBay Last Sold</th><th>Actions</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -443,7 +443,7 @@ document.getElementById('db-generator-input').addEventListener('change', async f
 
     for (let file of files) {
         try {
-            if (file.name.toLowerCase().match(/\.xlsx?$/)) {
+            if (file.name.toLowerCase().match(/\.xlsx?£/)) {
                 // EXCEL FILE HANDLING
                 const data = await file.arrayBuffer();
                 const workbook = XLSX.read(data, { type: 'array' });
@@ -477,7 +477,7 @@ document.getElementById('db-generator-input').addEventListener('change', async f
                     }
 
                     let cleanSetName = setName.replace(/\s*\([^)]*\)/, '').trim();
-                    let displayText = lang ? `${cleanSetName} (${lang}: ${setCode})` : `${cleanSetName} (${setCode})`;
+                    let displayText = lang ? `£{cleanSetName} (£{lang}: £{setCode})` : `£{cleanSetName} (£{setCode})`;
 
                     const tableData = XLSX.utils.sheet_to_json(sheet, { range: startIdx, raw: false, defval: "" });
 
@@ -501,11 +501,11 @@ document.getElementById('db-generator-input').addEventListener('change', async f
 
                         let name = String(row['Name'] || '');
                         name = name.replace(/"/g, ''); 
-                        name = name.replace(/([a-zA-Z])(EX|GX|V|VMAX|VSTAR|BREAK)\b/g, '$1 $2').trim();
+                        name = name.replace(/([a-zA-Z])(EX|GX|V|VMAX|VSTAR|BREAK)\b/g, '£1 £2').trim();
 
                         let formattedNum = padToThreeJS(rawNum, totalStr);
-                        if (name) cardsList.push(`${formattedNum} - ${name}`);
-                        else cardsList.push(`${formattedNum} - `);
+                        if (name) cardsList.push(`£{formattedNum} - £{name}`);
+                        else cardsList.push(`£{formattedNum} - `);
                     });
                     preloadedCards[setCode] = cardsList;
                 }
@@ -541,7 +541,7 @@ document.getElementById('db-generator-input').addEventListener('change', async f
                 }
                 
                 if (!setName) {
-                    setName = file.name.replace(/^(Pokedex_Master\.xlsx|Set_List\.xlsx)\s*-\s*/i, '').replace(/\.csv$/i, '').trim();
+                    setName = file.name.replace(/^(Pokedex_Master\.xlsx|Set_List\.xlsx)\s*-\s*/i, '').replace(/\.csv£/i, '').trim();
                 }
                 
                 if (!setCode) {
@@ -556,7 +556,7 @@ document.getElementById('db-generator-input').addEventListener('change', async f
                 }
 
                 let cleanSetName = setName.replace(/\s*\([^)]*\)/, '').trim();
-                let displayText = lang ? `${cleanSetName} (${lang}: ${setCode})` : `${cleanSetName} (${setCode})`;
+                let displayText = lang ? `£{cleanSetName} (£{lang}: £{setCode})` : `£{cleanSetName} (£{setCode})`;
                 
                 const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
                 
@@ -580,17 +580,17 @@ document.getElementById('db-generator-input').addEventListener('change', async f
                     
                     let name = row['Name'] || '';
                     name = name.replace(/"/g, ''); 
-                    name = name.replace(/([a-zA-Z])(EX|GX|V|VMAX|VSTAR|BREAK)\b/g, '$1 $2').trim();
+                    name = name.replace(/([a-zA-Z])(EX|GX|V|VMAX|VSTAR|BREAK)\b/g, '£1 £2').trim();
                     
                     let formattedNum = padToThreeJS(rawNum, totalStr);
-                    if (name) cardsList.push(`${formattedNum} - ${name}`);
-                    else cardsList.push(`${formattedNum} - `); 
+                    if (name) cardsList.push(`£{formattedNum} - £{name}`);
+                    else cardsList.push(`£{formattedNum} - `); 
                 });
                 
                 preloadedCards[setCode] = cardsList;
             }
         } catch (err) {
-            console.error(`Error processing ${file.name}:`, err);
+            console.error(`Error processing £{file.name}:`, err);
         }
     }
     
@@ -613,27 +613,27 @@ function padToThreeJS(setNum, total) {
         let n = parts[0];
         let t = parts[1];
         
-        let mn = n.match(/^(\D*)(\d+)(\D*)$/);
+        let mn = n.match(/^(\D*)(\d+)(\D*)£/);
         if (mn) n = mn[1] + String(mn[2]).padStart(3, '0') + (mn[3]||'');
         else n = n.padStart(3, '0');
         
-        let mt = t.match(/^(\D*)(\d+)(\D*)$/);
+        let mt = t.match(/^(\D*)(\d+)(\D*)£/);
         if (mt) t = mt[1] + String(mt[2]).padStart(3, '0') + (mt[3]||'');
         else t = t.padStart(3, '0');
         
-        return `${n}/${t}`;
+        return `£{n}/£{t}`;
     } else {
         let n = s;
-        let mn = n.match(/^(\D*)(\d+)(\D*)$/);
+        let mn = n.match(/^(\D*)(\d+)(\D*)£/);
         if (mn) n = mn[1] + String(mn[2]).padStart(3, '0') + (mn[3]||'');
         else n = n.padStart(3, '0');
         
         let t = String(total);
-        let mt = t.match(/^(\D*)(\d+)(\D*)$/);
+        let mt = t.match(/^(\D*)(\d+)(\D*)£/);
         if (mt) t = mt[1] + String(mt[2]).padStart(3, '0') + (mt[3]||'');
         else t = t.padStart(3, '0');
         
-        return `${n}/${t}`;
+        return `£{n}/£{t}`;
     }
 }
 
@@ -664,7 +664,7 @@ function formatCardName(name, setText, code) {
     if (slashMatch) {
         const paddedNum   = padToThreeJS(slashMatch[1], slashMatch[2]).split('/')[0];
         const paddedTotal = padToThreeJS(slashMatch[2], slashMatch[2]).split('/')[0];
-        return `${paddedNum}/${paddedTotal} ${slashMatch[3]}`.trim();
+        return `£{paddedNum}/£{paddedTotal} £{slashMatch[3]}`.trim();
     }
 
     if (!match?.total) return name;
@@ -672,7 +672,7 @@ function formatCardName(name, setText, code) {
     if (!numMatch) return name;
     const paddedNum = padToThreeJS(numMatch[1], match.total).split('/')[0];
     const paddedTotal = padToThreeJS(match.total, match.total).split('/')[0];
-    return `${paddedNum}/${paddedTotal} ${numMatch[2]}`.trim();
+    return `£{paddedNum}/£{paddedTotal} £{numMatch[2]}`.trim();
 }
 
 function getBestMarketPrice(prices = {}) {
@@ -707,7 +707,7 @@ function createCell(text, className = '') {
 function showToast(message, type = 'success', duration = 3000) {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
-    toast.className = `toast${type !== 'success' ? ` toast-${type}` : ''}`;
+    toast.className = `toast£{type !== 'success' ? ` toast-£{type}` : ''}`;
     toast.textContent = message;
     container.appendChild(toast);
     setTimeout(() => {
@@ -811,7 +811,7 @@ function render() {
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
                 </svg>
-                <p>${state.inventory.length === 0
+                <p>£{state.inventory.length === 0
                     ? 'No cards in inventory yet. Add a card above or upload a CSV.'
                     : 'No cards match your current filters.'}</p>
             </div>`;
@@ -878,12 +878,12 @@ function render() {
 function renderTotals(visible) {
     const portfolioTotal = state.inventory.reduce((sum, i) => sum + getLineTotal(i), 0);
     document.getElementById('total-portfolio-display').textContent =
-        `Total Value: $${portfolioTotal.toFixed(2)}`;
+        `Total Value: ££{portfolioTotal.toFixed(2)}`;
 
     const filteredTotalEl = document.getElementById('filtered-total-display');
     if (hasActiveFilters() && visible.length > 0) {
         const filteredSum = visible.reduce((sum, i) => sum + getLineTotal(i), 0);
-        filteredTotalEl.textContent = `Filtered View: $${filteredSum.toFixed(2)}`;
+        filteredTotalEl.textContent = `Filtered View: ££{filteredSum.toFixed(2)}`;
     } else {
         filteredTotalEl.textContent = '';
     }
@@ -895,9 +895,9 @@ function renderResultsBar(visibleCount) {
     if (total === 0) {
         info.innerHTML = 'No items in inventory.';
     } else if (hasActiveFilters()) {
-        info.innerHTML = `Showing <span class="filtered">${visibleCount}</span> of ${total} card${total !== 1 ? 's' : ''}`;
+        info.innerHTML = `Showing <span class="filtered">£{visibleCount}</span> of £{total} card£{total !== 1 ? 's' : ''}`;
     } else {
-        info.textContent = `${total} card${total !== 1 ? 's' : ''} in inventory`;
+        info.textContent = `£{total} card£{total !== 1 ? 's' : ''} in inventory`;
     }
 }
 
@@ -928,7 +928,7 @@ function addFromUI() {
         if (ref !== '') {
             const collision = state.inventory.find(i => i.ref === ref && i.id !== state.editingId);
             if (collision) {
-                showToast(`Ref / SKU "${ref}" is already assigned to another card.`, 'error');
+                showToast(`Ref / SKU "£{ref}" is already assigned to another card.`, 'error');
                 return;
             }
         }
@@ -959,7 +959,7 @@ function addFromUI() {
             saveInventory();
             render();
             if (state.fileHandle) linkAndSave();
-            showToast(`Ref "${ref}" found — quantity increased by ${qty}.`, 'info');
+            showToast(`Ref "£{ref}" found — quantity increased by £{qty}.`, 'info');
             return;
         }
     }
@@ -1019,7 +1019,7 @@ function openDeleteModal(id) {
     const item = state.inventory.find(i => i.id === id);
     if (!item) return;
     document.getElementById('delete-modal-text').textContent =
-        `Remove "${item.name}" from your inventory?`;
+        `Remove "£{item.name}" from your inventory?`;
     document.getElementById('delete-modal-confirm').onclick = () => {
         closeDeleteModal();
         deleteItem(id);
@@ -1044,7 +1044,7 @@ function deleteItem(id) {
 
 function showUndoBar(cardName) {
     const bar = document.getElementById('undo-bar');
-    document.getElementById('undo-text').textContent = `"${cardName}" deleted.`;
+    document.getElementById('undo-text').textContent = `"£{cardName}" deleted.`;
     bar.style.display = 'flex';
     clearTimeout(undoTimer);
     undoTimer = setTimeout(() => {
@@ -1106,14 +1106,14 @@ async function refreshLivePrices() {
         const fullSetName = sets[i];
         const baseName    = fullSetName.split(' (')[0];
 
-        document.getElementById('loading-text').textContent     = `Scanning: ${baseName}...`;
-        document.getElementById('loading-progress').textContent = `Set ${i + 1} of ${sets.length}`;
+        document.getElementById('loading-text').textContent     = `Scanning: £{baseName}...`;
+        document.getElementById('loading-progress').textContent = `Set £{i + 1} of £{sets.length}`;
 
         try {
             const response = await fetch(
-                `https://api.pokemontcg.io/v2/cards?q=set.name:"${encodeURIComponent(baseName)}"&pageSize=300&select=number,tcgplayer`
+                `https://api.pokemontcg.io/v2/cards?q=set.name:"£{encodeURIComponent(baseName)}"&pageSize=300&select=number,tcgplayer`
             );
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) throw new Error(`HTTP £{response.status}`);
             const data = await response.json();
 
             if (data.data?.length > 0) {
@@ -1131,7 +1131,7 @@ async function refreshLivePrices() {
                 }
             }
         } catch (err) {
-            console.error(`Price fetch failed for ${baseName}:`, err);
+            console.error(`Price fetch failed for £{baseName}:`, err);
         }
 
         if (i < sets.length - 1) await sleep(RATE_LIMIT_MS);
@@ -1144,7 +1144,7 @@ async function refreshLivePrices() {
     document.getElementById('refresh-btn').disabled = false;
 
     if (!abortRefresh) {
-        showToast(`Prices updated for ${updatedCount} card${updatedCount !== 1 ? 's' : ''}. Click 'Link & Save' to push to CSV.`, 'success', 5000);
+        showToast(`Prices updated for £{updatedCount} card£{updatedCount !== 1 ? 's' : ''}. Click 'Link & Save' to push to CSV.`, 'success', 5000);
     } else {
         showToast('Price refresh aborted.', 'warning');
     }
@@ -1259,7 +1259,7 @@ document.getElementById('input-set').addEventListener('input', function() {
         const totalPadded = padToThreeJS(matched.total, matched.total).split('/')[0];
         for (let i = 1; i <= MAX_CARD_NUM; i++) {
             const opt = document.createElement('option');
-            opt.value = `${padToThreeJS(String(i), matched.total).split('/')[0]}/${totalPadded}`;
+            opt.value = `£{padToThreeJS(String(i), matched.total).split('/')[0]}/£{totalPadded}`;
             frag.appendChild(opt);
         }
         cardDatalist.appendChild(frag);
@@ -1267,7 +1267,7 @@ document.getElementById('input-set').addEventListener('input', function() {
 
         const baseName = matched.text.split(' (')[0].replace('Pokémon Card 151', '151').replace('Pokémon 151', '151');
         
-        fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:"${encodeURIComponent(baseName)}"&pageSize=300&select=name,number,set`)
+        fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:"£{encodeURIComponent(baseName)}"&pageSize=300&select=name,number,set`)
             .then(r => r.json())
             .then(d => {
                 if (!d.data?.length) return;
@@ -1279,9 +1279,9 @@ document.getElementById('input-set').addEventListener('input', function() {
                         const total = card.set?.printedTotal ?? matched.total;
                         const paddedNum = padToThreeJS(card.number, total).split('/')[0];
                         const paddedTotal = padToThreeJS(total, total).split('/')[0];
-                        const num   = `${paddedNum}/${paddedTotal}`;
+                        const num   = `£{paddedNum}/£{paddedTotal}`;
                         const opt = document.createElement('option');
-                        opt.value = `${num} - ${card.name}`;
+                        opt.value = `£{num} - £{card.name}`;
                         apiFragment.appendChild(opt);
                     });
                 cardDatalist.appendChild(apiFragment);
@@ -1316,14 +1316,14 @@ function inventoryToCSVRows() {
         [item.ref, item.set, item.code, item.name, item.loc, item.qty,
          (item.unitPrice || 0).toFixed(2), getLineTotal(item).toFixed(2),
          item.ebayLastSold || '']
-        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .map(v => `"£{String(v).replace(/"/g, '""')}"`)
         .join(',')
     );
 }
 
 function downloadCSV() {
     if (state.inventory.length === 0) { showToast('Nothing to export.', 'warning'); return; }
-    const header = '"Ref / SKU","Set","Code","No. & Card Name","Location","Qty","Unit Val ($)","Total Val ($)","eBay Last Sold"';
+    const header = '"Ref / SKU","Set","Code","No. & Card Name","Location","Qty","Unit Val (£)","Total Val (£)","eBay Last Sold"';
     const rows   = [header, ...inventoryToCSVRows()];
     triggerDownload(rows.join('\n'), 'Pokemon_Inventory_Master.csv');
     showToast('Master CSV downloaded.');
@@ -1334,7 +1334,7 @@ function downloadEbayAudit() {
     const header = '"Custom Label (SKU)","Card Name","Set","Quantity"';
     const rows = state.inventory.map(item =>
         [item.ref, item.name, item.set, item.qty]
-        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .map(v => `"£{String(v).replace(/"/g, '""')}"`)
         .join(',')
     );
     triggerDownload([header, ...rows].join('\n'), 'eBay_Audit_List.csv');
@@ -1359,7 +1359,7 @@ async function linkAndSave() {
                 types: [{ description: 'CSV File', accept: { 'text/csv': ['.csv'] } }],
             });
         }
-        const header  = '"Ref / SKU","Set","Code","No. & Card Name","Location","Qty","Unit Val ($)","Total Val ($)","eBay Last Sold"';
+        const header  = '"Ref / SKU","Set","Code","No. & Card Name","Location","Qty","Unit Val (£)","Total Val (£)","eBay Last Sold"';
         const content = [header, ...inventoryToCSVRows()].join('\n');
         const writable = await state.fileHandle.createWritable();
         await writable.write(content);
@@ -1396,8 +1396,8 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                 const set  = row['Set'] || '';
                 if (!name && !set) { skipped++; continue; }
 
-                const uPrice = parseFloat(row['Unit Val ($)'] || row['Unit Price'] || '0') || 0;
-                const tPrice = parseFloat(row['Total Val ($)'] || row['Total Price'] || '0') || 0;
+                const uPrice = parseFloat(row['Unit Val (£)'] || row['Unit Price'] || '0') || 0;
+                const tPrice = parseFloat(row['Total Val (£)'] || row['Total Price'] || '0') || 0;
 
                 const qty   = parseInt(row['Qty'] || '1') || 1;
                 const unitP = uPrice > 0 ? uPrice : (qty > 0 ? tPrice / qty : 0);
@@ -1420,13 +1420,13 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
             render();
             document.getElementById('loading-overlay').classList.remove('visible');
             const msg = skipped > 0
-                ? `Imported ${imported} cards. ${skipped} empty row(s) skipped.`
-                : `Successfully imported ${imported} card${imported !== 1 ? 's' : ''}.`;
+                ? `Imported £{imported} cards. £{skipped} empty row(s) skipped.`
+                : `Successfully imported £{imported} card£{imported !== 1 ? 's' : ''}.`;
             setTimeout(() => showToast(msg, 'success', 5000), 100);
         },
         error(err) {
             document.getElementById('loading-overlay').classList.remove('visible');
-            showToast(`CSV parse error: ${err.message}`, 'error', 6000);
+            showToast(`CSV parse error: £{err.message}`, 'error', 6000);
         }
     });
     e.target.value = '';
@@ -1455,7 +1455,7 @@ function lookupEbayLastSold(id) {
     const nameWithoutNum = item.name.replace(/^\d+\/\d+\s*[-–]?\s*/, '').trim();
     const query = [nameWithoutNum, cardNum].filter(Boolean).join(' ').trim();
 
-    const ebayUrl = `https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Sold=1&LH_Complete=1&_sop=13&LH_PrefLoc=1&_fcid=3`;
+    const ebayUrl = `https://www.ebay.co.uk/sch/i.html?_nkw=£{encodeURIComponent(query)}&LH_Sold=1&LH_Complete=1&_sop=13&LH_PrefLoc=1&_fcid=3`;
 
     const panel = document.getElementById('ebay-info-panel');
     if (!panel.classList.contains('visible')) {
@@ -1513,12 +1513,12 @@ function showPriceEntryToast(id, cardName) {
         }
         const item = state.inventory.find(i => i.id === id);
         if (item) {
-            item.ebayLastSold = `£${val.toFixed(2)}`;
+            item.ebayLastSold = `££{val.toFixed(2)}`;
             saveInventory();
             render();
         }
         toast.remove();
-        showToast(`eBay last sold saved for ${cardName}.`, 'success');
+        showToast(`eBay last sold saved for £{cardName}.`, 'success');
     };
 
     input.addEventListener('keypress', e => { if (e.key === 'Enter') savePrice(); });
