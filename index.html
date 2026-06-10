@@ -741,12 +741,6 @@ function loadInventory() {
                     id: item.id || uid()
                 };
                 migrated.name = formatCardName(migrated.name || '', migrated.set || '', migrated.code || '');
-                
-                // NEW: Automatically sync eBay price to Unit Price if missing
-                if (migrated.ebayLastSold && (!migrated.unitPrice || migrated.unitPrice === 0)) {
-                    migrated.unitPrice = parseFloat(migrated.ebayLastSold.replace(/[^0-9.]/g, '')) || 0;
-                }
-
                 return migrated;
             });
             saveInventory();
@@ -916,8 +910,32 @@ function renderFilterState() {
 }
 
 // ═══════════════════════════════════════════════════════
-// ADD / EDIT / DELETE
+// ADD / EDIT / DELETE / SMART SKU AUTOFILL
 // ═══════════════════════════════════════════════════════
+
+// NEW SMART SKU DETECTION LISTENER
+document.getElementById('input-ref').addEventListener('input', function() {
+    if (state.editingId) return; // Don't block manual editing
+    
+    const ref = this.value.trim();
+    const existing = state.inventory.find(i => i.ref === ref);
+    const addBtn = document.getElementById('main-action-btn');
+
+    if (existing && ref !== '') {
+        document.getElementById('input-set').value = existing.set || '';
+        document.getElementById('input-code').value = existing.code || '';
+        document.getElementById('input-name').value = existing.name || '';
+        document.getElementById('input-location').value = existing.loc || '';
+        document.getElementById('input-value').value = existing.unitPrice ? existing.unitPrice.toFixed(2) : '';
+        
+        addBtn.textContent = '+ Add Qty';
+        addBtn.style.backgroundColor = '#3498db'; // Turn Blue for Add
+    } else {
+        addBtn.textContent = 'Add to Stock';
+        addBtn.style.backgroundColor = '#27ae60'; // Revert to Green
+    }
+});
+
 function addFromUI() {
     const ref  = document.getElementById('input-ref').value.trim();
     const set  = document.getElementById('input-set').value.trim();
@@ -957,19 +975,22 @@ function addFromUI() {
     if (ref !== '') {
         const existing = state.inventory.find(i => i.ref === ref);
         if (existing) {
+            // HARD DUPLICATE PROTECTION
+            // Check if the user is attempting to overwrite an existing SKU with a different card name or set
+            if (existing.name !== formattedName || existing.set !== set) {
+                showToast(`Error: SKU "${ref}" is already assigned to "${existing.name}". Use a different SKU!`, 'error', 5000);
+                return;
+            }
+
             existing.qty += qty;
             if (unitPrice > 0) existing.unitPrice = unitPrice;
-            if (set && name) {
-                existing.set  = set;
-                existing.code = code.toUpperCase();
-                existing.name = formattedName;
-                existing.loc  = loc;
-            }
+            existing.loc = loc;
+            
             clearInputs();
             saveInventory();
             render();
             if (state.fileHandle) linkAndSave();
-            showToast(`Ref "${ref}" found — quantity increased by ${qty}.`, 'info');
+            showToast(`SKU "${ref}" found — quantity increased by ${qty}.`, 'info');
             return;
         }
     }
@@ -1407,14 +1428,8 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                 const set  = row['Set'] || '';
                 if (!name && !set) { skipped++; continue; }
 
-                // Safe fallback for reading imported pricing values
-                const ebayRaw = row['eBay Last Sold'] || null;
-                const ebayParsed = ebayRaw ? parseFloat(ebayRaw.replace(/[^0-9.]/g, '')) : 0;
-                
-                let uPrice = parseFloat(row['Unit Val (£)'] || row['Unit Val ($)'] || row['Unit Price'] || '0') || 0;
-                if (uPrice === 0 && ebayParsed > 0) uPrice = ebayParsed;
-
-                const tPrice = parseFloat(row['Total Val (£)'] || row['Total Val ($)'] || row['Total Price'] || '0') || 0;
+                const uPrice = parseFloat(row['Unit Val (£)'] || row['Unit Price'] || '0') || 0;
+                const tPrice = parseFloat(row['Total Val (£)'] || row['Total Price'] || '0') || 0;
 
                 const qty   = parseInt(row['Qty'] || '1') || 1;
                 const unitP = uPrice > 0 ? uPrice : (qty > 0 ? tPrice / qty : 0);
@@ -1428,7 +1443,7 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                     loc:          row['Location'] || '',
                     qty,
                     unitPrice:    unitP,
-                    ebayLastSold: ebayRaw,
+                    ebayLastSold: row['eBay Last Sold'] || null,
                 });
                 imported++;
             }
@@ -1459,6 +1474,12 @@ function clearInputs() {
     });
     document.getElementById('input-qty').value = 1;
     document.getElementById('card-options').innerHTML = '';
+    
+    // Reset Add button back to default green
+    const addBtn = document.getElementById('main-action-btn');
+    addBtn.textContent = 'Add to Stock';
+    addBtn.style.backgroundColor = '#27ae60';
+    
     document.getElementById('input-ref').focus();
 }
 
@@ -1532,7 +1553,7 @@ function showPriceEntryToast(id, cardName) {
         const item = state.inventory.find(i => i.id === id);
         if (item) {
             item.ebayLastSold = `£${val.toFixed(2)}`;
-            item.unitPrice = val; // NEW: Set Unit Value to the manual eBay price entered
+            item.unitPrice = val; 
             saveInventory();
             render();
         }
