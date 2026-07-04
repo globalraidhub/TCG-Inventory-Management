@@ -1,3 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon Inventory Management</title>
+    
+    <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js" charset="UTF-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* ── Base Reset ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, sans-serif; padding: 40px; background-color: #121212; color: #e0e0e0; }
+
+        /* ── Layout ── */
+        .container { max-width: 1400px; margin: auto; background: #1e1e1e; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        h2 { color: #ffffff; margin: 0; }
+
+        /* ── Portfolio Value ── */
+        .portfolio-value { background-color: #000; color: #2ecc71; padding: 10px 20px; border-radius: 8px; font-size: 24px; font-weight: bold; border: 2px solid #2ecc71; }
+
+        /* ── Buttons ── */
+        .action-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+        .btn { border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: filter 0.15s, opacity 0.15s; }
+        .btn:hover { filter: brightness(1.15); }
+        .btn:active { filter: brightness(0.9); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+        .btn-upload  { background-color: #8e44ad; color: #fff; }
+        .btn-download{ background-color: #2980b9; color: #fff; }
+        .btn-audit   { background-color: #f1c40f; color: #2c3e50; }
+        .btn-price   { background-color: #2ecc71; color: #2c3e50; box-shadow: 0 0 10px rgba(46,204,113,0.2); }
+        .btn-link-save { background-color: #d35400; color: #fff; }
+        .btn-clear   { background-color: #7f8c8d; color: #fff; }
+        .btn-build-db{ background-color: #d35400; color: #fff; }
+        .btn-add     { background-color: #27ae60; color: #fff; padding: 0 20px; height: 40px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; transition: filter 0.15s; }
+        .btn-add:hover { filter: brightness(1.15); }
+        .btn-cancel  { background-color: #e74c3c; color: #fff; padding: 0 20px; height: 40px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; display: none; transition: filter 0.15s; }
+        .btn-cancel:hover { filter: brightness(1.15); }
+        .btn-edit    { background-color: #f39c12; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: filter 0.15s; }
+        .btn-edit:hover { filter: brightness(1.15); }
+        .btn-delete  { background-color: #e74c3c; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: filter 0.15s; }
+        .btn-delete:hover { filter: brightness(1.15); }
+        .btn-clear-filters { background-color: #7f8c8d; color: #fff; border: none; padding: 0 15px; height: 40px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: filter 0.15s; }
+        .btn-clear-filters:hover { filter: brightness(1.15); }
+
+        /* ── Inputs ── */
+        input, select {
+            height: 40px; border: 1px solid #444; border-radius: 6px;
+            padding: 0 10px; box-sizing: border-box;
+            background-color: #2d2d2d; color: #fff; font-size: 14px;
+        }
+        input::placeholder { color: #999; }
+        input:focus, select:focus { outline: none; border-color: #3498db; }
+
+        /* ── Inventory Row ── */
+        .inventory-row {
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+            margin-bottom: 20px; background: #252525; padding: 15px;
+            border: 1px solid #333; border-radius: 8px;
+            transition: border-color 0.2s;
+        }
+        .inventory-row.editing-mode { border-color: #f39c12; }
+
+        /* ── Filter Section ── */
+        .filter-section {
+            display: flex; gap: 8px; align-items: center; background-color: #252525;
+            padding: 15px; border-radius: 8px; border: 1px solid #333;
+            margin-bottom: 10px; flex-wrap: wrap;
+            transition: border-color 0.2s;
+        }
+        .filter-section.filters-active { border-color: #3498db; }
+        .filter-input { flex: 1; min-width: 130px; }
+
+        /* ── Results Info Bar ── */
+        .results-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 4px; margin-bottom: 6px; font-size: 13px; color: #999;
+        }
+        .results-bar span.filtered { color: #3498db; font-weight: bold; }
+
+        /* ── Table ── */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 14px; color: #e0e0e0; min-width: 800px; }
+        th, td { border-bottom: 1px solid #333; padding: 12px; text-align: left; }
+        th { background-color: #2a2a2a; color: #fff; border-bottom: 2px solid #444; white-space: nowrap; }
+        .val-col { font-weight: bold; color: #2ecc71; font-variant-numeric: tabular-nums lining-nums; }
+        td:nth-child(7), td:nth-child(8) { font-variant-numeric: tabular-nums lining-nums; color: #2ecc71; font-weight: bold; }
+        tr.being-edited { background-color: rgba(243,156,18,0.08); outline: 1px solid #f39c12; }
+        tr:hover:not(.being-edited) { background-color: rgba(255,255,255,0.03); }
+
+        /* ── Empty State ── */
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 60px 20px; color: #666; text-align: center;
+        }
+        .empty-state svg { margin-bottom: 16px; opacity: 0.4; }
+        .empty-state p { font-size: 15px; }
+
+        /* ── Toast Notifications ── */
+        #toast-container {
+            position: fixed; bottom: 24px; right: 24px;
+            display: flex; flex-direction: column; gap: 10px; z-index: 2000;
+        }
+        .toast {
+            display: flex; align-items: center; gap: 10px;
+            background: #2a2a2a; color: #e0e0e0; padding: 12px 18px;
+            border-radius: 8px; font-size: 14px; font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border-left: 4px solid #2ecc71;
+            animation: slideIn 0.25s ease;
+            max-width: 320px;
+        }
+        .toast.toast-error { border-left-color: #e74c3c; }
+        .toast.toast-warning { border-left-color: #f39c12; }
+        .toast.toast-info { border-left-color: #3498db; }
+        @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; transform: translateY(6px); } }
+
+        /* ── Undo Banner ── */
+        #undo-bar {
+            display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: #2a2a2a; color: #e0e0e0; padding: 12px 20px;
+            border-radius: 8px; font-size: 14px; font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 2000;
+            border: 1px solid #444; display: none; align-items: center; gap: 14px;
+        }
+        #undo-bar button { background: #2ecc71; color: #1e1e1e; border: none; padding: 5px 14px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 13px; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75); z-index: 1500;
+            justify-content: center; align-items: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal {
+            background: #1e1e1e; border: 1px solid #444; border-radius: 12px;
+            padding: 28px; max-width: 420px; width: 90%; text-align: center;
+        }
+        .modal h3 { color: #fff; margin-bottom: 10px; font-size: 17px; }
+        .modal p { color: #aaa; font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+        .modal .modal-actions { display: flex; gap: 10px; justify-content: center; }
+        .modal .modal-confirm { background: #e74c3c; color: #fff; border: none; padding: 9px 22px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .modal .modal-cancel  { background: #444; color: #e0e0e0; border: none; padding: 9px 22px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        /* ── Loading Overlay ── */
+        #loading-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85); color: #fff;
+            flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000; font-size: 24px;
+        }
+        #loading-overlay.visible { display: flex; }
+        .spinner { border: 8px solid #333; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        #loading-progress { font-size: 13px; color: #aaa; margin-top: 8px; }
+        #abort-btn { margin-top: 18px; background: #e74c3c; color: #fff; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; }
+
+        /* ── eBay Lookup Buttons ── */
+        .btn-ebay-lookup {
+            background-color: #e8a400; color: #1e1e1e; border: none;
+            padding: 4px 10px; border-radius: 4px; cursor: pointer;
+            font-size: 12px; font-weight: bold; transition: filter 0.15s;
+        }
+        .btn-ebay-lookup:hover { filter: brightness(1.15); }
+        .btn-ebay-lookup:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-ebay-refresh {
+            background: none; border: none; color: #e8a400; cursor: pointer;
+            font-size: 14px; padding: 0 2px; transition: transform 0.2s;
+        }
+        .btn-ebay-refresh:hover { transform: rotate(180deg); }
+
+        /* ── eBay Info Panel ── */
+        .ebay-info-panel {
+            background: #252525; border: 1px solid #e8a400; border-radius: 8px;
+            padding: 14px 18px; margin-bottom: 14px; font-size: 13px;
+            color: #ccc; line-height: 1.6; display: none;
+        }
+        .ebay-info-panel.visible { display: block; }
+        .ebay-info-panel strong { color: #e8a400; }
+        .ebay-info-panel a { color: #3498db; }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            body { padding: 16px; }
+            .container { padding: 16px; }
+            .portfolio-value { font-size: 16px; }
+            .header-section { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-text">Fetching Live Market Prices...</div>
+    <div id="loading-progress"></div>
+    <div style="font-size:13px;margin-top:8px;color:#ccc;" id="loading-subtext">(Respecting API rate limits to safeguard data sync)</div>
+    <button id="abort-btn" onclick="abortProcess()">Abort</button>
+</div>
+
+<div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+        <h3>Delete Card?</h3>
+        <p id="delete-modal-text">Are you sure you want to remove this card from your inventory?</p>
+        <div class="modal-actions">
+            <button class="modal-cancel"  onclick="closeDeleteModal()">Cancel</button>
+            <button class="modal-confirm" id="delete-modal-confirm">Delete</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="wipe-modal">
+    <div class="modal">
+        <h3>⚠️ Wipe All Data?</h3>
+        <p>This will permanently delete all inventory data. This cannot be undone.</p>
+        <div class="modal-actions">
+            <button class="modal-cancel"  onclick="closeWipeModal()">Cancel</button>
+            <button class="modal-confirm" onclick="confirmWipe()">Yes, Wipe Everything</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<div id="undo-bar">
+    <span id="undo-text">Card deleted.</span>
+    <button onclick="undoDelete()">Undo</button>
+</div>
+
+<div class="container">
+    <div class="header-section">
+        <h2>Pokemon Inventory Management</h2>
+        <div class="portfolio-value" id="total-portfolio-display">Total Value: £0.00</div>
+    </div>
+
+    <div class="action-buttons">
+        <input type="file" id="csv-file-input" accept=".csv" style="display:none;">
+        <input type="file" id="db-generator-input" multiple accept=".csv, .xlsx, .xls" style="display:none;">
+
+        <button class="btn btn-upload"    onclick="document.getElementById('csv-file-input').click()">Upload Inventory CSV</button>
+        <button class="btn btn-download"  onclick="downloadCSV()">Master Backup</button>
+        <button class="btn btn-audit"     onclick="downloadEbayAudit()">eBay Audit Export</button>
+        <button class="btn btn-price"     id="refresh-btn" onclick="refreshLivePrices()">🔄 Refresh Live Prices</button>
+        <button class="btn btn-link-save" onclick="linkAndSave()">📁 Link & Save Local File</button>
+        <button class="btn btn-clear"     onclick="openWipeModal()">Wipe Data</button>
+        <button class="btn btn-build-db"  onclick="document.getElementById('db-generator-input').click()">🛠️ Build DB from Excel / CSV</button>
+    </div>
+
+    <div class="ebay-info-panel" id="ebay-info-panel">
+        <strong>ℹ️ eBay Last Sold — How it works:</strong>
+        Opening an eBay sold search in a new tab is the most reliable approach for a static HTML app.
+        Clicking "🔍 Check" opens a pre-filtered <strong>eBay UK completed listings</strong> search
+        for that exact card name — filtered to <strong>UK-located sellers only</strong>, sorted by most recently sold,
+        so you see real GBP prices relevant to your market.
+        Direct API access is blocked by eBay's CORS policy in browser apps without a backend proxy.
+        <a href="#" onclick="document.getElementById('ebay-info-panel').classList.remove('visible');return false;" style="margin-left:8px;">[Dismiss]</a>
+    </div>
+
+    <div class="inventory-row" id="inventory-row">
+        <input type="text"   id="input-ref"      placeholder="Ref / SKU"             style="width:95px;">
+        <input list="set-options" id="input-set" placeholder="1. Type Set Name..."   style="width:215px;">
+        <datalist id="set-options"></datalist>
+        <input type="text"   id="input-code"     placeholder="Code"                  style="width:70px;">
+        <input list="card-options" type="text" id="input-name" placeholder="2. Type No. or Name..." style="width:235px;">
+        <datalist id="card-options"></datalist>
+        <input type="text"   id="input-location" placeholder="Loc"                    style="width:70px;">
+        <input type="number" id="input-qty"      value="1" min="1"                   style="width:60px;">
+        <input type="number" id="input-value"    placeholder="Unit £" step="0.01" min="0" style="width:80px;">
+        
+        <button class="btn-add"    id="main-action-btn"  onclick="addFromUI()">Add to Stock</button>
+        <button class="btn-cancel" id="cancel-edit-btn"  onclick="cancelEdit()">Cancel Edit</button>
+    </div>
+
+    <div class="filter-section" id="filter-section">
+        <strong style="color:#fff;white-space:nowrap;">Sort & Filter:</strong>
+        <select id="sort-dropdown" style="width:160px;font-weight:bold;background-color:#34495e;" onchange="onSortChange()">
+            <option value="default">Sort By: None</option>
+            <option value="qty-desc">Qty: High to Low</option>
+            <option value="qty-asc">Qty: Low to High</option>
+            <option value="total-desc">Total £: High to Low</option>
+            <option value="total-asc">Total £: Low to High</option>
+            <option value="unit-desc">Unit £: High to Low</option>
+            <option value="set-asc">Set: A to Z</option>
+            <option value="set-desc">Set: Z to A</option>
+            <option value="name-asc">Name: A to Z</option>
+        </select>
+        <input type="text" id="filter-ref"   class="filter-input" placeholder="🔍 Ref / SKU"  style="max-width:100px;">
+        <select          id="filter-set"   style="width:180px;"><option value="">All Sets</option></select>
+        <input type="text" id="filter-code"  class="filter-input" placeholder="🔍 Code"        style="max-width:80px;">
+        <input type="text" id="filter-name"  class="filter-input" placeholder="🔍 Name/No."    style="flex:2;min-width:150px;">
+        <input type="text" id="filter-loc"   class="filter-input" placeholder="🔍 Loc"         style="max-width:80px;">
+        <input type="text" id="filter-qty"   class="filter-input" placeholder="🔍 Qty"         style="max-width:70px;">
+        <input type="text" id="filter-unit"  class="filter-input" placeholder="🔍 Unit £"      style="max-width:80px;">
+        <input type="text" id="filter-total" class="filter-input" placeholder="🔍 Total £"     style="max-width:80px;">
+        <button class="btn-clear-filters" onclick="clearFilters()">Clear</button>
+    </div>
+
+    <div class="results-bar">
+        <span id="results-info">No items in inventory.</span>
+        <span id="filtered-total-display" style="color:#2ecc71;font-weight:bold;font-size:14px;"></span>
+    </div>
+
+    <div class="table-wrap">
+        <table id="inventory-table">
+            <thead>
+                <tr>
+                    <th>Ref / SKU</th><th>Set</th><th>Code</th>
+                    <th>No. & Card Name</th><th>Location</th><th>Qty</th>
+                    <th>Unit Val (£)</th><th>Total Val (£)</th><th>eBay Last Sold</th><th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONSTANTS & CORE DATABASE 
+// ═══════════════════════════════════════════════════════
+const RATE_LIMIT_MS = 800;
+const MAX_CARD_NUM  = 300;
+
+// This guarantees your original 44 sets are NEVER wiped.
+const CORE_DATABASE = [
+    { id: "CRI",   text: "Chaos Rising (EN: CRI)",             total: "086" },
+    { id: "POR",   text: "Perfect Order (EN: POR)",            total: "088" },
+    { id: "ASC",   text: "Ascended Heroes (EN: ASC)",          total: "217" },
+    { id: "PFL",   text: "Phantasmal Flames (EN: PFL)",        total: "130" },
+    { id: "MEG",   text: "Mega Evolution (EN: MEG)",           total: "132" },
+    { id: "MEP",   text: "Mega Evolution Promos (EN: MEP)",    total: "079" }, 
+    { id: "BLB",   text: "Black Bolt (EN: BLB)",               total: "80"  },
+    { id: "WHT",   text: "White Flare (EN: WHT)",              total: "106" },
+    { id: "DRI",   text: "Destined Rivals (EN: DRI)",          total: "182" },
+    { id: "JTG",   text: "Journey Together (EN: JTG)",         total: "143" },
+    { id: "PRE",   text: "Prismatic Evolutions (EN: PRE)",     total: "175" },
+    { id: "SSP",   text: "Surging Sparks (EN: SSP)",           total: "191" },
+    { id: "SCR",   text: "Stellar Crown (EN: SCR)",            total: "142" },
+    { id: "SFA",   text: "Shrouded Fable (EN: SFA)",           total: "064" },
+    { id: "TWM",   text: "Twilight Masquerade (EN: TWM)",      total: "167" },
+    { id: "TEF",   text: "Temporal Forces (EN: TEF)",          total: "162" },
+    { id: "PAF",   text: "Paldean Fates (EN: PAF)",            total: "091" },
+    { id: "PAR",   text: "Paradox Rift (EN: PAR)",             total: "182" },
+    { id: "MEW",   text: "Pokémon 151 (EN: MEW)",              total: "165" },
+    { id: "OBF",   text: "Obsidian Flames (EN: OBF)",          total: "197" },
+    { id: "PAL",   text: "Paldea Evolved (EN: PAL)",           total: "193" },
+    { id: "M4",    text: "Ninja Spinner (JP: M4)",             total: "106" },
+    { id: "M3",    text: "Nihil Zero (JP: M3)",                total: "106" },
+    { id: "M1S",   text: "Mega Symphonia (JP: M1s)",           total: "063" },
+    { id: "M2A",   text: "Mega Dream ex (JP: M2A)",            total: "193" },
+    { id: "M2",    text: "Inferno X (JP: M2)",                 total: "106" },
+    { id: "M1",    text: "Mega Evolution (JP: M1)",            total: "083" },
+    { id: "SV10",  text: "Glory of Team Rocket (JP: SV10)",    total: "098" },
+    { id: "SV11b", text: "Black Bolt (JP: SV11B)",             total: "086" },
+    { id: "SV11w", text: "White Flare (JP: SV11W)",            total: "086" },
+    { id: "SV8a",  text: "Terastal Festival (JP: SV8a)",       total: "187" },
+    { id: "SV8",   text: "Super Electric Breaker (JP: SV8)",   total: "106" },
+    { id: "SV7.5", text: "Terastal Dream (JP: SV7.5)",         total: "115" },
+    { id: "SV7",   text: "Paradise Dragona (JP: SV7)",         total: "064" },
+    { id: "SV6.5", text: "Stellar Miracle (JP: SV6.5)",        total: "102" },
+    { id: "SV6a",  text: "Night Wanderer (JP: SV6a)",          total: "064" },
+    { id: "SV6",   text: "Mask of Change (JP: SV6)",           total: "101" },
+    { id: "SV4",   text: "Cyber Judge (JP: SV4)",              total: "071" },
+    { id: "SV4a",  text: "Shiny Treasure ex (JP: SV4a)",       total: "190" },
+    { id: "SV3.5", text: "Ancient Roar (JP: SV3.5)",           total: "066" },
+    { id: "SV2a",  text: "Pokémon Card 151 (JP: SV2a)",        total: "165" },
+    { id: "SV3",   text: "Ruler of the Black Flame (JP: SV3)", total: "108" },
+    { id: "SV2",   text: "Clay Burst (JP: SV2)",               total: "071" },
+    { id: "SV1a",  text: "Triplet Beat (JP: SV1a)",            total: "073" },
+];
+
+const CORE_PRELOADED = {
+    "MEG": [
+        "001/132 - Bulbasaur","002/132 - Ivysaur","003/132 - Mega Venusaur EX","004/132 - Exeggcute","005/132 - Exeggutor","006/132 - Tangela","007/132 - Tangrowth","008/132 - Chikorita","009/132 - Bayleef","010/132 - Meganium","011/132 - Shuckle","012/132 - Celebi","013/132 - Seedot","014/132 - Nuzleaf","015/132 - Shiftry","016/132 - Nincada","017/132 - Ninjask","018/132 - Dhelmise","019/132 - Vulpix","020/132 - Ninetales","021/132 - Numel","022/132 - Mega Camerupt EX","023/132 - Litleo","024/132 - Pyroar","025/132 - Volcanion","026/132 - Scorbunny","027/132 - Raboot","028/132 - Cinderace","029/132 - Sizzlipede","030/132 - Centiskorch","031/132 - Chi-Yu","032/132 - Mantine","033/132 - Corphish","034/132 - Kyogre","035/132 - Snover","036/132 - Mega Abomasnow EX","037/132 - Clauncher","038/132 - Clawitzer","039/132 - Sobble","040/132 - Drizzile","041/132 - Inteleon","042/132 - Snom","043/132 - Frosmoth","044/132 - Eiscue","045/132 - Magnemite","046/132 - Magneton","047/132 - Magnezone","048/132 - Raikou","049/132 - Electrike","050/132 - Mega Manectric EX","051/132 - Pachirisu","052/132 - Helioptile","053/132 - Heliolisk","054/132 - Abra","055/132 - Kadabra","056/132 - Alakazam","057/132 - Jynx","058/132 - Ralts","059/132 - Kirlia","060/132 - Mega Gardevoir EX","061/132 - Shedinja","062/132 - Spoink","063/132 - Grumpig","064/132 - Xerneas","065/132 - Greavard","066/132 - Houndstone","067/132 - Gimmighoul","068/132 - Sandshrew","069/132 - Sandslash","070/132 - Onix","071/132 - Tyrogue","072/132 - Makuhita","073/132 - Hariyama","074/132 - Lunatone","075/132 - Solrock","076/132 - Riolu","077/132 - Mega Lucario EX","078/132 - Croagunk","079/132 - Toxicroak","080/132 - Marshadow","081/132 - Stonjourner","082/132 - Nacli","083/132 - Naclstack","084/132 - Garganacl","085/132 - Crawdaunt","086/132 - Mega Absol EX","087/132 - Spiritomb","088/132 - Yveltal","089/132 - Nickit","090/132 - Thievul","091/132 - Shroodle","092/132 - Grafaiai","093/132 - Steelix","094/132 - Mega Mawile EX","095/132 - Dialga","096/132 - Tinkatink","097/132 - Tinkatuff","098/132 - Tinkaton","099/132 - Gholdengo","100/132 - Mega Latias EX","101/132 - Latios","102/132 - Spearow","103/132 - Fearow","104/132 - Mega Kangaskhan EX","105/132 - Delibird","106/132 - Miltank","107/132 - Buneary","108/132 - Lopunny","109/132 - Yungoos","110/132 - Gumshoos","111/132 - Stufful","112/132 - Bewear","113/132 - Acerola's Mischief","114/132 - Boss's Orders [Ghetsis]","115/132 - Energy Switch","116/132 - Fighting Gong","117/132 - Forest of Vitality","118/132 - Iron Defender","119/132 - Lillie's Determination","120/132 - Lt. Surge's Bargain","121/132 - Mega Signal","122/132 - Mystery Garden","123/132 - Pokémon Center Lady","124/132 - Premium Power Pro","125/132 - Rare Candy","126/132 - Repel","127/132 - Risky Ruins","128/132 - Strange Timepiece","129/132 - Surfing Beach","130/132 - Switch","131/132 - Ultra Ball","132/132 - Wally's Compassion","133/132 - Bulbasaur","134/132 - Ivysaur","135/132 - Exeggutor","136/132 - Shuckle","137/132 - Ninjask","138/132 - Vulpix","139/132 - Litleo","140/132 - Snover","141/132 - Clawitzer","142/132 - Inteleon","143/132 - Helioptile","144/132 - Shedinja","145/132 - Houndstone","146/132 - Marshadow","147/132 - Garganacl","148/132 - Spiritomb","149/132 - Shroodle","150/132 - Steelix","151/132 - Spearow","152/132 - Delibird","153/132 - Gumshoos","154/132 - Stufful","155/132 - Mega Venusaur EX","156/132 - Mega Camerupt EX","157/132 - Mega Abomasnow EX","158/132 - Mega Manectric EX","159/132 - Mega Gardevoir EX","160/132 - Mega Lucario EX","161/132 - Mega Absol EX","162/132 - Mega Mawile EX","163/132 - Mega Latias EX","164/132 - Mega Kangaskhan EX","165/132 - Acerola's Mischief","166/132 - Air Balloon","167/132 - Buddy-Buddy Poffin","168/132 - Fighting Gong","169/132 - Lillie's Determination","170/132 - Lt. Surge's Bargain","171/132 - Mega Signal","172/132 - Mystery Garden","173/132 - Night Stretcher","174/132 - Premium Power Pro","175/132 - Rare Candy","176/132 - Wally's Compassion","177/132 - Mega Venusaur EX","178/132 - Mega Gardevoir EX","179/132 - Mega Lucario EX","180/132 - Mega Absol EX","181/132 - Mega Latias EX","182/132 - Mega Kangaskhan EX","183/132 - Acerola's Mischief","184/132 - Lillie's Determination","185/132 - Lt. Surge's Bargain","186/132 - Wally's Compassion","187/132 - Mega Gardevoir EX","188/132 - Mega Lucario EX"
+    ],
+    "ASC": [
+        "001/217 - Erika's Oddish","002/217 - Erika's Gloom","003/217 - Erika's Vileplume EX","004/217 - Erika's Bellsprout","005/217 - Erika's Weepinbell","006/217 - Erika's Victreebel","007/217 - Erika's Tangela","008/217 - Chikorita","009/217 - Bayleef","010/217 - Mega Meganium EX","011/217 - Wurmple","012/217 - Silcoon","013/217 - Beautifly","014/217 - Cascoon","015/217 - Dustox","016/217 - Budew","017/217 - Grubbin","018/217 - Team Rocket's Tarountula","019/217 - Team Rocket's Spidops","020/217 - Charmander","021/217 - Charmeleon","022/217 - Mega Charizard Y EX","023/217 - Ethan's Slugma","024/217 - Ethan's Magcargo","025/217 - Entei","026/217 - Ethan's Ho-Oh EX","027/217 - Numel","028/217 - Camerupt","029/217 - Tepig","030/217 - Pignite","031/217 - Mega Emboar EX","032/217 - N's Darumaka","033/217 - N's Darmanitan","034/217 - Salandit","035/217 - Salazzle","036/217 - Scorbunny","037/217 - Raboot","038/217 - Cinderace EX","039/217 - Psyduck","040/217 - Golduck","041/217 - Totodile","042/217 - Croconaw","043/217 - Mega Feraligatr EX","044/217 - Sneasel","045/217 - Weavile","046/217 - Snorunt","047/217 - Mega Froslass EX","048/217 - Regice EX","049/217 - N's Vanillite","050/217 - N's Vanillish","051/217 - N's Vanilluxe","052/217 - Snom","053/217 - Frosmoth","054/217 - Glastrier","055/217 - Pikachu","056/217 - Raichu","057/217 - Pikachu EX","058/217 - Voltorb EX","059/217 - Tynamo","060/217 - Eelektrik","061/217 - Mega Eelektross EX","062/217 - Stunfisk","063/217 - Helioptile","064/217 - Heliolisk","065/217 - Charjabug","066/217 - Vikavolt","067/217 - Tapu Koko","068/217 - Hop's Pincurchin EX","069/217 - Iono's Tadbulb","070/217 - Iono's Bellibolt EX","071/217 - Iono's Wattrel","072/217 - Iono's Kilowattrel","073/217 - Miraidon EX","074/217 - Clefairy","075/217 - Clefable","076/217 - Lillie's Clefairy EX","077/217 - Team Rocket's Exeggcute","078/217 - Team Rocket's Exeggutor","079/217 - Team Rocket's Mewtwo EX","080/217 - Togepi","081/217 - Togetic","082/217 - Togekiss","083/217 - Marill","084/217 - Azumarill EX","085/217 - Misdreavus","086/217 - Mismagius","087/217 - Ralts","088/217 - Kirlia","089/217 - Mega Gardevoir EX","090/217 - Shuppet","091/217 - Banette","092/217 - Rotom","093/217 - Swirlix","094/217 - Slurpuff","095/217 - Hop's Phantump","096/217 - Hop's Trevenant","097/217 - Team Rocket's Mimikyu","098/217 - Spectrier","099/217 - Munkidori","100/217 - Team Rocket's Diglett","101/217 - Team Rocket's Dugtrio","102/217 - Hitmontop","103/217 - Meditite","104/217 - Medicham","105/217 - Lunatone","106/217 - Solrock","107/217 - Regirock EX","108/217 - Groudon","109/217 - Cynthia's Gible","110/217 - Cynthia's Gabite","111/217 - Cynthia's Garchomp EX","112/217 - Riolu","113/217 - Mega Lucario EX","114/217 - Stunfisk EX","115/217 - Pancham","116/217 - Mega Hawlucha EX","117/217 - Carbink","118/217 - Rolycoly","119/217 - Carkol","120/217 - Coalossal","121/217 - Koraidon EX","122/217 - Okidogi","123/217 - Gastly","124/217 - Haunter","125/217 - Mega Gengar EX","126/217 - Team Rocket's Murkrow","127/217 - Team Rocket's Honchkrow","128/217 - Poochyena","129/217 - Mightyena","130/217 - Galarian Zigzagoon","131/217 - Galarian Linoone","132/217 - Galarian Obstagoon","133/217 - Cynthia's Spiritomb","134/217 - Scraggy","135/217 - Mega Scrafty EX","136/217 - N's Zorua","137/217 - N's Zoroark EX","138/217 - Vullaby","139/217 - Mandibuzz EX","140/217 - Pangoro","141/217 - Hoopa","142/217 - Fezandipiti EX","143/217 - Pecharunt","144/217 - Mawile","145/217 - Registeel EX","146/217 - Pawniard","147/217 - Bisharp","148/217 - Kingambit","149/217 - Togedemaru EX","150/217 - Dratini","151/217 - Dragonair","152/217 - Mega Dragonite EX","153/217 - Rayquaza","154/217 - N's Reshiram","155/217 - N's Zekrom","156/217 - Noibat","157/217 - Noivern","158/217 - Dreepy","159/217 - Drakloak","160/217 - Dragapult EX","161/217 - Team Rocket's Meowth","162/217 - Team Rocket's Kangaskhan EX","163/217 - Larry's Dunsparce","164/217 - Larry's Dudunsparce EX","165/217 - Skitty","166/217 - Delcatty","167/217 - Zangoose EX","168/217 - Larry's Starly","169/217 - Larry's Staravia","170/217 - Larry's Staraptor","171/217 - Fan Rotom","172/217 - Mega Audino EX","173/217 - Larry's Rufflet","174/217 - Larry's Braviary","175/217 - Larry's Komala","176/217 - Drampa","177/217 - Hop's Cramorant","178/217 - Terapagos","179/217 - Terapagos EX","180/217 - Acerola's Mischief","181/217 - Air Balloon","182/217 - Anthea & Concordia","183/217 - Boss's Orders [Corbeau]","184/217 - Buddy-Buddy Poffin","185/217 - Canari","186/217 - Counter Gain","187/217 - Fighting Gong","188/217 - Forest of Vitality","189/217 - Glass Trumpet","190/217 - Iris's Fighting Spirit","191/217 - Light Ball","192/217 - Lillie's Determination","193/217 - Mega Signal","194/217 - Mystery Garden","195/217 - N's PP Up","196/217 - Night Stretcher","197/217 - Nighttime Mine","198/217 - Poké Pad","199/217 - Premium Power Pro","200/217 - Surfer","201/217 - Team Rocket's Archer","202/217 - Team Rocket's Ariana","203/217 - Team Rocket's Factory","204/217 - Team Rocket's Giovanni","205/217 - Team Rocket's Great Ball","206/217 - Team Rocket's Hypnotizer","207/217 - Team Rocket's Petrel","208/217 - Team Rocket's Proton","209/217 - Team Rocket's Transceiver","210/217 - Team Rocket's Watchtower","211/217 - Thick Scale","212/217 - Tool Scrapper","213/217 - Ultra Ball","214/217 - Urbain","215/217 - Waitress","216/217 - Prism Energy","217/217 - Team Rocket's Energy","218/217 - Erika's Tangela","219/217 - Beautifly","220/217 - Dustox","221/217 - Budew","222/217 - Ethan's Magcargo","223/217 - Numel","224/217 - Salazzle","225/217 - Scorbunny","226/217 - Psyduck","227/217 - Snorunt","228/217 - Weavile","229/217 - Heliolisk","230/217 - Vikavolt","231/217 - Iono's Wattrel","232/217 - Marill","233/217 - Misdreavus","234/217 - Banette","235/217 - Togekiss","236/217 - Slurpuff","237/217 - Hop's Trevenant","238/217 - Team Rocket's Mimikyu","239/217 - Team Rocket's Dugtrio","240/217 - Hitmontop","241/217 - Medicham","242/217 - Carbink","243/217 - Mightyena","244/217 - Cynthia's Spiritomb","245/217 - Galarian Obstagoon","246/217 - Mawile","247/217 - Dreepy","248/217 - Drakloak","249/217 - Larry's Staraptor","250/217 - Fan Rotom","251/217 - Sprigatito EX","252/217 - Stunfisk EX","253/217 - Mega Audino EX","254/217 - Anthea & Concordia","255/217 - Black Belt's Training","256/217 - Boss's Orders [Corbeau]","257/217 - Canari","258/217 - Cheren","259/217 - Counter Gain","260/217 - Glass Trumpet","261/217 - Jamming Tower","262/217 - N's PP Up","263/217 - Team Rocket's Transceiver","264/217 - Ultra Ball","265/217 - Mega Froslass EX","266/217 - Mega Eelektross EX","267/217 - Mega Diancie EX","268/217 - Mega Hawlucha EX","269/217 - Mega Gengar EX","270/217 - Mega Scrafty EX","271/217 - Mega Dragonite EX","272/217 - Mega Meganium EX","273/217 - Mega Emboar EX","274/217 - Mega Feraligatr EX","275/217 - Mega Froslass EX","276/217 - Pikachu EX","277/217 - Pikachu EX","278/217 - Mega Eelektross EX","279/217 - Iono's Bellibolt EX","280/217 - Lillie's Clefairy EX","281/217 - Team Rocket's Mewtwo EX","282/217 - Mega Diancie EX","283/217 - Mega Hawlucha EX","284/217 - Mega Gengar EX","285/217 - Mega Scrafty EX","286/217 - N's Zoroark EX","287/217 - Marnie's Grimmsnarl EX","288/217 - Fezandipiti EX","289/217 - Steven's Metagross EX","290/217 - Mega Dragonite EX","291/217 - Canari","292/217 - Iris's Fighting Spirit","293/217 - Surfer","294/217 - Mega Charizard Y EX","295/217 - Mega Dragonite EX"
+    ],
+    "PFL": [
+        "001/094 - Oddish","002/094 - Gloom","003/094 - Vileplume","004/094 - Mega Heracross EX","005/094 - Lotad","006/094 - Lombre","007/094 - Ludicolo","008/094 - Genesect","009/094 - Nymble","010/094 - Lokix","011/094 - Charmander","012/094 - Charmeleon","013/094 - Mega Charizard X EX","014/094 - Moltres","015/094 - Darumaka","016/094 - Darmanitan","017/094 - Reshiram","018/094 - Oricorio EX","019/094 - Charcadet","020/094 - Ceruledge","021/094 - Seel","022/094 - Dewgong","023/094 - Swinub","024/094 - Piloswine","025/094 - Mamoswine","026/094 - Suicune","027/094 - Piplup","028/094 - Prinplup","029/094 - Rotom EX","030/094 - Yamper","031/094 - Boltund","032/094 - Pawmi","033/094 - Pawmo","034/094 - Pawmot","035/094 - Misdreavus","036/094 - Mismagius EX","037/094 - Snubbull","038/094 - Granbull","039/094 - Cresselia","040/094 - Meloetta","041/094 - Mega Diancie EX","042/094 - Mimikyu","043/094 - Milcery","044/094 - Alcremie","045/094 - Zacian","046/094 - Bramblin","047/094 - Brambleghast","048/094 - Paldean Tauros","049/094 - Gligar","050/094 - Gliscor","051/094 - Trapinch","052/094 - Vibrava","053/094 - Flygon","054/094 - Gastly","055/094 - Haunter","056/094 - Mega Gengar EX","057/094 - Murkrow","058/094 - Honchkrow","059/094 - Sableye","060/094 - Carvanha","061/094 - Mega Sharpedo EX","062/094 - Seviper","063/094 - Absol","064/094 - Sandile","065/094 - Krokorok","066/094 - Krookodile","067/094 - Toxel","068/094 - Toxtricity","069/094 - Eternatus","070/094 - Empoleon EX","071/094 - Bronzor","072/094 - Bronzong","073/094 - Togedemaru","074/094 - Duraludon","075/094 - Archaludon","076/094 - Jigglypuff","077/094 - Wigglytuff","078/094 - Aipom","079/094 - Ambipom","080/094 - Smeargle","081/094 - Zigzagoon","082/094 - Linoone","083/094 - Buneary","084/094 - Mega Lopunny EX","085/094 - Battle Cage","086/094 - Blowtorch","087/094 - Dawn","088/094 - Dizzying Valley","089/094 - Firebreather","090/094 - Grimsley's Move","091/094 - Jumbo Ice Cream","092/094 - Punk Helmet","093/094 - Sacred Charm","094/094 - Wondrous Patch","095/094 - Ludicolo","096/094 - Nymble","097/094 - Dewgong","098/094 - Piplup","099/094 - Yamper","100/094 - Zacian","101/094 - Flygon","102/094 - Paldean Wooper","103/094 - Toxtricity","104/094 - Togedemaru","105/094 - Wigglytuff","106/094 - Meowth","107/094 - Ambipom","108/094 - Mega Heracross EX","109/094 - Mega Charizard X EX","110/094 - Oricorio EX","111/094 - Rotom EX","112/094 - Mismagius EX","113/094 - Mega Sharpedo EX","114/094 - Empoleon EX","115/094 - Mega Lopunny EX","116/094 - Battle Cage","117/094 - Blowtorch","118/094 - Dawn","119/094 - Firebreather","120/094 - Grimsley's Move","121/094 - Punk Helmet","122/094 - Sacred Charm","123/094 - Switch","124/094 - Ignition Energy","125/094 - Mega Charizard X EX","126/094 - Rotom EX","127/094 - Mega Sharpedo EX","128/094 - Mega Lopunny EX","129/094 - Dawn","130/094 - Mega Charizard X EX"
+    ],
+    "MEP": [
+        "001/079 - Meganium","002/079 - Inteleon","003/079 - Alakazam","004/079 - Lunatone","005/079 - Drifloon","006/079 - Drifblim","007/079 - Psyduck","008/079 - Golduck","009/079 - Alakazam","010/079 - Riolu","011/079 - Mega Latias EX","012/079 - Mega Lucario EX","013/079 - Mega Venusaur EX","014/079 - Ceruledge","015/079 - Zacian","016/079 - Flygon","017/079 - Toxtricity","018/079 - Cottonee","019/079 - Whimsicott","020/079 - Sneasel","021/079 - Weavile","022/079 - Charcadet","023/079 - Mega Charizard X EX","024/079 - Oricorio EX","025/079 - Mega Kangaskhan EX","026/079 - Meloetta","027/079 - Haunter","028/079 - Celebratory Fanfare","029/079 - Mega Charizard X EX","030/079 - Mega Charizard Y EX","031/079 - N's Zekrom","032/079 - Mega Gardevoir EX","033/079 - Mega Lucario EX","034/079 - Mega Meganium EX","035/079 - Mega Emboar EX","036/079 - Mega Feraligatr EX","037/079 - Bulbasaur","038/079 - Charmander","039/079 - Squirtle","040/079 - Turtwig","041/079 - Chimchar","042/079 - Piplup","043/079 - Rowlet","044/079 - Litten","045/079 - Popplio","064/079 - Serperior","065/079 - Barbaracle","066/079 - Tyrantrum","067/079 - Doublade","068/079 - Makuhita","069/079 - Chikorita","070/079 - Tyrunt","071/079 - Mega Zygarde EX","078/079 - Toxel","079/079 - Charmeleon"
+    ],
+    "WHT": [
+        "001/086 - Sewaddle","002/086 - Swadloon","003/086 - Leavanny","004/086 - Cottonee","005/086 - Whimsicott EX","006/086 - Deerling","007/086 - Sawsbuck","008/086 - Shelmet","009/086 - Accelgor","010/086 - Virizion","011/086 - Tepig","012/086 - Pignite","013/086 - Emboar","014/086 - Pansear","015/086 - Simisear","016/086 - Heatmor","017/086 - Reshiram EX","018/086 - Oshawott","019/086 - Dewott","020/086 - Samurott","021/086 - Basculin","022/086 - Ducklett","023/086 - Swanna","024/086 - Vanillite","025/086 - Vanillish","026/086 - Vanilluxe","027/086 - Keldeo EX","028/086 - Blitzle","029/086 - Zebstrika","030/086 - Joltik","031/086 - Galvantula","032/086 - Stunfisk","033/086 - Woobat","034/086 - Swoobat","035/086 - Sigilyph","036/086 - Yamask","037/086 - Cofagrigus","038/086 - Gothita","039/086 - Gothorita","040/086 - Gothitelle","041/086 - Frillish","042/086 - Jellicent EX","043/086 - Roggenrola","044/086 - Boldore","045/086 - Gigalith","046/086 - Sawk","047/086 - Archen","048/086 - Archeops","049/086 - Mienfoo","050/086 - Mienshao","051/086 - Terrakion","052/086 - Purrloin","053/086 - Liepard","054/086 - Scraggy","055/086 - Scrafty","056/086 - Trubbish","057/086 - Garbodor","058/086 - Zorua","059/086 - Zoroark","060/086 - Deino","061/086 - Zweilous","062/086 - Hydreigon EX","063/086 - Ferroseed","064/086 - Ferrothorn","065/086 - Klink","066/086 - Klang","067/086 - Klinklang","068/086 - Durant","069/086 - Druddigon","070/086 - Patrat","071/086 - Watchog","072/086 - Lillipup","073/086 - Herdier","074/086 - Stoutland","075/086 - Bouffalant EX","076/086 - Rufflet","077/086 - Braviary","078/086 - Tornadus","079/086 - Energy Retrieval","080/086 - Tool Scrapper","081/086 - Antique Plume Fossil","082/086 - Brave Bangle","083/086 - Harlequin","084/086 - Cheren","085/086 - Hilda","086/086 - Ignition Energy","087/086 - Sewaddle","088/086 - Swadloon","089/086 - Leavanny","090/086 - Cottonee","091/086 - Deerling","092/086 - Sawsbuck","093/086 - Shelmet","094/086 - Accelgor","095/086 - Virizion","096/086 - Tepig","097/086 - Pignite","098/086 - Emboar","099/086 - Pansear","100/086 - Simisear","101/086 - Heatmor","102/086 - Oshawott","103/086 - Dewott","104/086 - Samurott","105/086 - Basculin","106/086 - Ducklett","107/086 - Swanna","108/086 - Vanillite","109/086 - Vanillish","110/086 - Vanilluxe","111/086 - Blitzle","112/086 - Zebstrika","113/086 - Joltik","114/086 - Galvantula","115/086 - Stunfisk","116/086 - Woobat","117/086 - Swoobat","118/086 - Sigilyph","119/086 - Yamask","120/086 - Cofagrigus","121/086 - Gothita","122/086 - Gothorita","123/086 - Gothitelle","124/086 - Frillish","125/086 - Roggenrola","126/086 - Boldore","127/086 - Gigalith","128/086 - Sawk","129/086 - Archen","130/086 - Archeops","131/086 - Mienfoo","132/086 - Mienshao","133/086 - Terrakion","134/086 - Purrloin","135/086 - Liepard","136/086 - Scraggy","137/086 - Scrafty","138/086 - Trubbish","139/086 - Garbodor","140/086 - Zorua","141/086 - Zoroark","142/086 - Deino","143/086 - Zweilous","144/086 - Ferroseed","145/086 - Ferrothorn","146/086 - Klink","147/086 - Klang","148/086 - Klinklang","149/086 - Durant","150/086 - Druddigon","151/086 - Patrat","152/086 - Watchog","153/086 - Lillipup","154/086 - Herdier","155/086 - Stoutland","156/086 - Rufflet","157/086 - Braviary","158/086 - Tornadus","159/086 - Whimsicott EX","160/086 - Reshiram EX","161/086 - Keldeo EX","162/086 - Jellicent EX","163/086 - Hydreigon EX","164/086 - Bouffalant EX","165/086 - Harlequin","166/086 - Hilda","167/086 - Whimsicott EX","168/086 - Reshiram EX","169/086 - Keldeo EX","170/086 - Jellicent EX","171/086 - Hydreigon EX","172/086 - Bouffalant EX","173/086 - Hilda","174/086 - Reshiram EX"
+    ]
+};
+
+// ═══════════════════════════════════════════════════════
+// LOAD EXTERNAL DATABASE FROM LOCAL STORAGE
+// ═══════════════════════════════════════════════════════
+let EXTERNAL_DATABASE = [];
+let EXTERNAL_PRELOADED = {};
+
+try {
+    const savedDb = localStorage.getItem('CUSTOM_POKEMON_DB');
+    const savedCards = localStorage.getItem('CUSTOM_POKEMON_CARDS');
+    if (savedDb) EXTERNAL_DATABASE = JSON.parse(savedDb);
+    if (savedCards) EXTERNAL_PRELOADED = JSON.parse(savedCards);
+} catch(e) {
+    console.warn("Could not load custom database.");
+}
+
+// Safely merge databases
+const dbMap = new Map();
+CORE_DATABASE.forEach(item => dbMap.set(item.id, item));
+EXTERNAL_DATABASE.forEach(item => dbMap.set(item.id, item));
+
+const DATABASE = Array.from(dbMap.values());
+const PRELOADED_CARDS = { ...CORE_PRELOADED, ...EXTERNAL_PRELOADED };
+
+// ═══════════════════════════════════════════════════════
+// APPLICATION STATE
+// ═══════════════════════════════════════════════════════
+const state = {
+    inventory:  [],   
+    sort:       'default',
+    filters: { ref:'', set:'', code:'', name:'', loc:'', qty:'', unit:'', total:'' },
+    editingId:  null,
+    fileHandle: null,
+};
+
+let lastDeleted = null;
+let undoTimer   = null;
+let abortRefresh = false;
+
+// ═══════════════════════════════════════════════════════
+// DATABASE GENERATOR LOGIC (CSV AND EXCEL SUPPORT!)
+// ═══════════════════════════════════════════════════════
+document.getElementById('db-generator-input').addEventListener('change', async function(e) {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    document.getElementById('loading-text').textContent = 'Building Master Database...';
+    document.getElementById('loading-progress').textContent = `Processing file(s)...`;
+    document.getElementById('loading-subtext').textContent = 'Saving directly to your browser memory...';
+    document.getElementById('abort-btn').style.display = 'none';
+    document.getElementById('loading-overlay').classList.add('visible');
+
+    let dbArray = [];
+    let preloadedCards = {};
+
+    for (let file of files) {
+        try {
+            if (file.name.toLowerCase().match(/\.xlsx?$/)) {
+                // EXCEL FILE HANDLING
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                for (let sheetName of workbook.SheetNames) {
+                    const sheet = workbook.Sheets[sheetName];
+                    const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
+                    if (rawData.length === 0) continue;
+
+                    let startIdx = 0;
+                    for (let i = 0; i < rawData.length; i++) {
+                        if (rawData[i] && String(rawData[i][0]).trim() === 'Set #') {
+                            startIdx = i;
+                            break;
+                        }
+                    }
+
+                    let setName = sheetName;
+                    let setCode = sheetName;
+                    let lang = "";
+
+                    if (startIdx > 0 && rawData[0]) {
+                        let titleCell = String(rawData[0][0] || "").trim();
+                        let codeCell = String(rawData[0][1] || "").trim();
+                        if (titleCell && titleCell !== 'Set #') setName = titleCell;
+                        if (codeCell) {
+                            let codeParts = codeCell.split(/\s+/);
+                            setCode = codeParts[0];
+                            if (codeParts.length > 1) lang = codeParts[1];
+                        }
+                    }
+
+                    let cleanSetName = setName.replace(/\s*\([^)]*\)/, '').trim();
+                    let displayText = lang ? `${cleanSetName} (${lang}: ${setCode})` : `${cleanSetName} (${setCode})`;
+
+                    const tableData = XLSX.utils.sheet_to_json(sheet, { range: startIdx, raw: false, defval: "" });
+
+                    let maxDenom = 0;
+                    tableData.forEach(row => {
+                        let s = String(row['Set #'] || '');
+                        if (s.includes('/')) {
+                            let d = parseInt(s.split('/')[1].replace(/\D/g, ''));
+                            if (d > maxDenom) maxDenom = d;
+                        }
+                    });
+                    if (maxDenom === 0) maxDenom = tableData.length;
+                    let totalStr = String(maxDenom).padStart(3, '0');
+
+                    dbArray.push({ id: setCode, text: displayText, total: totalStr });
+
+                    let cardsList = [];
+                    tableData.forEach(row => {
+                        let rawNum = String(row['Set #'] || '').trim();
+                        if (!rawNum) return;
+
+                        let name = String(row['Name'] || '');
+                        name = name.replace(/"/g, ''); 
+                        name = name.replace(/([a-zA-Z])(EX|GX|V|VMAX|VSTAR|BREAK)\b/g, '$1 $2').trim();
+
+                        let formattedNum = padToThreeJS(rawNum, totalStr);
+                        if (name) cardsList.push(`${formattedNum} - ${name}`);
+                        else cardsList.push(`${formattedNum} - `);
+                    });
+                    preloadedCards[setCode] = cardsList;
+                }
+            } else {
+                // CSV FILE HANDLING
+                const text = await file.text();
+                const lines = text.split('\n');
+                
+                let startIdx = 0;
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].trim().startsWith('Set #')) {
+                        startIdx = i;
+                        break;
+                    }
+                }
+                
+                const csvText = lines.slice(startIdx).join('\n');
+                
+                let setName = "";
+                let setCode = "";
+                let lang = "";
+
+                if (startIdx > 0) {
+                    let parts = lines[0].split(',');
+                    setName = parts[0].trim();
+                    if (parts.length > 1 && parts[1].trim()) {
+                        let codeParts = parts[1].trim().split(/\s+/);
+                        setCode = codeParts[0];
+                        if(codeParts.length > 1) {
+                            lang = codeParts[1];
+                        }
+                    }
+                }
+                
+                if (!setName) {
+                    setName = file.name.replace(/^(Pokedex_Master\.xlsx|Set_List\.xlsx)\s*-\s*/i, '').replace(/\.csv$/i, '').trim();
+                }
+                
+                if (!setCode) {
+                    let match = setName.match(/\(([^)]+)\)/); 
+                    if (match) {
+                        setCode = match[1];
+                    } else {
+                        let words = setName.split(/\s+/);
+                        if (words.length === 1) setCode = words[0].substring(0,3).toUpperCase();
+                        else setCode = words.map(w => w[0]).join('').substring(0,4).toUpperCase();
+                    }
+                }
+
+                let cleanSetName = setName.replace(/\s*\([^)]*\)/, '').trim();
+                let displayText = lang ? `${cleanSetName} (${lang}: ${setCode})` : `${cleanSetName} (${setCode})`;
+                
+                const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+                
+                let maxDenom = 0;
+                parsed.data.forEach(row => {
+                    let s = row['Set #'] || '';
+                    if (s.includes('/')) {
+                        let d = parseInt(s.split('/')[1].replace(/\D/g, ''));
+                        if (d > maxDenom) maxDenom = d;
+                    }
+                });
+                if (maxDenom === 0) maxDenom = parsed.data.length;
+                let totalStr = String(maxDenom).padStart(3, '0');
+                
+                dbArray.push({ id: setCode, text: displayText, total: totalStr });
+                
+                let cardsList = [];
+                parsed.data.forEach(row => {
+                    let rawNum = row['Set #'];
+                    if (!rawNum) return;
+                    
+                    let name = row['Name'] || '';
+                    name = name.replace(/"/g, ''); 
+                    name = name.replace(/([a-zA-Z])(EX|GX|V|VMAX|VSTAR|BREAK)\b/g, '$1 $2').trim();
+                    
+                    let formattedNum = padToThreeJS(rawNum, totalStr);
+                    if (name) cardsList.push(`${formattedNum} - ${name}`);
+                    else cardsList.push(`${formattedNum} - `); 
+                });
+                
+                preloadedCards[setCode] = cardsList;
+            }
+        } catch (err) {
+            console.error(`Error processing ${file.name}:`, err);
+        }
+    }
+    
+    try {
+        localStorage.setItem('CUSTOM_POKEMON_DB', JSON.stringify(dbArray));
+        localStorage.setItem('CUSTOM_POKEMON_CARDS', JSON.stringify(preloadedCards));
+        document.getElementById('loading-overlay').classList.remove('visible');
+        showToast('Database built successfully! Reloading app...', 'success', 2000);
+        setTimeout(() => { window.location.reload(); }, 1500);
+    } catch(err) {
+        document.getElementById('loading-overlay').classList.remove('visible');
+        alert("Error saving database. Your browser's local storage might be full.");
+    }
+});
+
+function padToThreeJS(setNum, total) {
+    let s = String(setNum).trim();
+    if (s.includes('/')) {
+        let parts = s.split('/');
+        let n = parts[0];
+        let t = parts[1];
+        
+        let mn = n.match(/^(\D*)(\d+)(\D*)$/);
+        if (mn) n = mn[1] + String(mn[2]).padStart(3, '0') + (mn[3]||'');
+        else n = n.padStart(3, '0');
+        
+        let mt = t.match(/^(\D*)(\d+)(\D*)$/);
+        if (mt) t = mt[1] + String(mt[2]).padStart(3, '0') + (mt[3]||'');
+        else t = t.padStart(3, '0');
+        
+        return `${n}/${t}`;
+    } else {
+        let n = s;
+        let mn = n.match(/^(\D*)(\d+)(\D*)$/);
+        if (mn) n = mn[1] + String(mn[2]).padStart(3, '0') + (mn[3]||'');
+        else n = n.padStart(3, '0');
+        
+        let t = String(total);
+        let mt = t.match(/^(\D*)(\d+)(\D*)$/);
+        if (mt) t = mt[1] + String(mt[2]).padStart(3, '0') + (mt[3]||'');
+        else t = t.padStart(3, '0');
+        
+        return `${n}/${t}`;
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+// SMART SEARCH & HELPERS
+// ═══════════════════════════════════════════════════════
+
+function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+// Lookup by exact text, code, or clean name
+function findSet(typedValue) {
+    if (!typedValue) return null;
+    const lower = typedValue.toLowerCase().trim();
+    return DATABASE.find(i => {
+        const full = i.text.toLowerCase();
+        const nameOnly = full.split(' (')[0].trim();
+        return full === lower || nameOnly === lower || i.id.toLowerCase() === lower;
+    });
+}
+
+function formatCardName(name, setText, code) {
+    if (!name) return name;
+    const match = findSet(setText) || findSet(code);
+
+    const slashMatch = name.match(/^([^\/\s]+)\/([^\/\s]+)\s*[-–]?\s*(.*)/);
+    if (slashMatch) {
+        const paddedNum   = padToThreeJS(slashMatch[1], slashMatch[2]).split('/')[0];
+        const paddedTotal = padToThreeJS(slashMatch[2], slashMatch[2]).split('/')[0];
+        return `${paddedNum}/${paddedTotal} ${slashMatch[3]}`.trim();
+    }
+
+    if (!match?.total) return name;
+    const numMatch = name.match(/^([A-Za-z0-9]+)[\s\-]*(.*)/);
+    if (!numMatch) return name;
+    const paddedNum = padToThreeJS(numMatch[1], match.total).split('/')[0];
+    const paddedTotal = padToThreeJS(match.total, match.total).split('/')[0];
+    return `${paddedNum}/${paddedTotal} ${numMatch[2]}`.trim();
+}
+
+function getBestMarketPrice(prices = {}) {
+    const preferredOrder = [
+        'normal', 'holofoil', 'reverseHolofoil',
+        '1stEditionHolofoil', '1stEditionNormal',
+        'unlimitedHolofoil', 'unlimitedNormal'
+    ];
+    for (const key of preferredOrder) {
+        if (prices[key]?.market) return Number(prices[key].market);
+    }
+    return 0;
+}
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+function debounce(fn, delay) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+    };
+}
+
+function createCell(text, className = '') {
+    const td = document.createElement('td');
+    td.textContent = text ?? '';
+    if (className) td.className = className;
+    return td;
+}
+
+function showToast(message, type = 'success', duration = 3000) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast${type !== 'success' ? ` toast-${type}` : ''}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+// ═══════════════════════════════════════════════════════
+// DATA — SAVE / LOAD / TOTALS
+// ═══════════════════════════════════════════════════════
+function saveInventory() {
+    try {
+        localStorage.setItem('pokemonInventory', JSON.stringify(state.inventory));
+        localStorage.setItem('pokemonInventory_backup', JSON.stringify(state.inventory));
+    } catch (e) { }
+}
+
+function loadInventory() {
+    try {
+        const saved = localStorage.getItem('pokemonInventory');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            state.inventory = parsed.map(item => {
+                const migrated = {
+                    ebayLastSold: null,
+                    ...item,
+                    id: item.id || uid()
+                };
+                migrated.name = formatCardName(migrated.name || '', migrated.set || '', migrated.code || '');
+                return migrated;
+            });
+            saveInventory();
+        }
+    } catch (e) {
+        showToast('Could not load saved inventory.', 'error');
+    }
+}
+
+function getLineTotal(item) {
+    return (item.qty || 0) * (item.unitPrice || 0);
+}
+
+// ═══════════════════════════════════════════════════════
+// FILTERING & SORTING (operates on state.inventory)
+// ═══════════════════════════════════════════════════════
+function matchesFilters(item) {
+    const f = state.filters;
+    const total = getLineTotal(item).toFixed(2);
+    const unit  = (item.unitPrice || 0).toFixed(2);
+
+    return (
+        (!f.ref   || String(item.ref  || '').toLowerCase().includes(f.ref))    &&
+        (!f.set   || item.set === f.set)                                       &&
+        (!f.code  || String(item.code || '').toLowerCase().includes(f.code))   &&
+        (!f.name  || String(item.name || '').toLowerCase().includes(f.name))   &&
+        (!f.loc   || String(item.loc  || '').toLowerCase().includes(f.loc))    &&
+        (!f.qty   || String(item.qty  || '').includes(f.qty))                  &&
+        (!f.unit  || unit.includes(f.unit))                                    &&
+        (!f.total || total.includes(f.total))
+    );
+}
+
+function compareItems(a, b) {
+    const aTotal = getLineTotal(a), bTotal = getLineTotal(b);
+    switch (state.sort) {
+        case 'qty-desc':   return b.qty - a.qty;
+        case 'qty-asc':    return a.qty - b.qty;
+        case 'total-desc': return bTotal - aTotal;
+        case 'total-asc':  return aTotal - bTotal;
+        case 'unit-desc':  return (b.unitPrice || 0) - (a.unitPrice || 0);
+        case 'set-asc':    return String(a.set).localeCompare(b.set);
+        case 'set-desc':   return String(b.set).localeCompare(a.set);
+        case 'name-asc':   return String(a.name).localeCompare(b.name);
+        default:           return 0;
+    }
+}
+
+function getVisibleInventory() {
+    return state.inventory.filter(matchesFilters).sort(compareItems);
+}
+
+function hasActiveFilters() {
+    return Object.values(state.filters).some(v => v !== '');
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+function render() {
+    const visible = getVisibleInventory();
+    const tbody   = document.querySelector('#inventory-table tbody');
+    tbody.textContent = '';
+
+    if (visible.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 10;
+        td.innerHTML = `
+            <div class="empty-state">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                </svg>
+                <p>${state.inventory.length === 0
+                    ? 'No cards in inventory yet. Add a card above or upload a CSV.'
+                    : 'No cards match your current filters.'}</p>
+            </div>`;
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+    } else {
+        for (const item of visible) {
+            const tr = document.createElement('tr');
+            if (item.id === state.editingId) tr.classList.add('being-edited');
+
+            const actionsCell = document.createElement('td');
+            const editBtn  = document.createElement('button');
+            editBtn.className = 'btn-edit';
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', () => startEdit(item.id));
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn-delete';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', () => openDeleteModal(item.id));
+
+            actionsCell.append(editBtn, ' ', deleteBtn);
+
+            const ebayCell = document.createElement('td');
+            if (item.ebayLastSold) {
+                const priceSpan = document.createElement('span');
+                priceSpan.style.cssText = 'color:#f39c12;font-weight:bold;font-variant-numeric:tabular-nums lining-nums;margin-right:6px;';
+                priceSpan.textContent = item.ebayLastSold;
+                const refreshIcon = document.createElement('button');
+                refreshIcon.className = 'btn-ebay-refresh';
+                refreshIcon.title = 'Re-check eBay last sold';
+                refreshIcon.textContent = '↻';
+                refreshIcon.addEventListener('click', () => lookupEbayLastSold(item.id));
+                ebayCell.append(priceSpan, refreshIcon);
+            } else {
+                const lookupBtn = document.createElement('button');
+                lookupBtn.className = 'btn-ebay-lookup';
+                lookupBtn.textContent = '🔍 Check';
+                lookupBtn.addEventListener('click', () => lookupEbayLastSold(item.id));
+                ebayCell.appendChild(lookupBtn);
+            }
+
+            tr.append(
+                createCell(item.ref),
+                createCell(item.set),
+                createCell(item.code),
+                createCell(item.name),
+                createCell(item.loc),
+                createCell(String(item.qty)),
+                createCell((item.unitPrice || 0).toFixed(2)),
+                createCell(getLineTotal(item).toFixed(2)),
+                ebayCell,
+                actionsCell
+            );
+            tbody.appendChild(tr);
+        }
+    }
+
+    renderTotals(visible);
+    renderResultsBar(visible.length);
+    renderFilterState();
+}
+
+function renderTotals(visible) {
+    const portfolioTotal = state.inventory.reduce((sum, i) => sum + getLineTotal(i), 0);
+    document.getElementById('total-portfolio-display').textContent =
+        `Total Value: £${portfolioTotal.toFixed(2)}`;
+
+    const filteredTotalEl = document.getElementById('filtered-total-display');
+    if (hasActiveFilters() && visible.length > 0) {
+        const filteredSum = visible.reduce((sum, i) => sum + getLineTotal(i), 0);
+        filteredTotalEl.textContent = `Filtered View: £${filteredSum.toFixed(2)}`;
+    } else {
+        filteredTotalEl.textContent = '';
+    }
+}
+
+function renderResultsBar(visibleCount) {
+    const info = document.getElementById('results-info');
+    const total = state.inventory.length;
+    if (total === 0) {
+        info.innerHTML = 'No items in inventory.';
+    } else if (hasActiveFilters()) {
+        info.innerHTML = `Showing <span class="filtered">${visibleCount}</span> of ${total} card${total !== 1 ? 's' : ''}`;
+    } else {
+        info.textContent = `${total} card${total !== 1 ? 's' : ''} in inventory`;
+    }
+}
+
+function renderFilterState() {
+    const section = document.getElementById('filter-section');
+    section.classList.toggle('filters-active', hasActiveFilters());
+}
+
+// ═══════════════════════════════════════════════════════
+// ADD / EDIT / DELETE / SMART SKU AUTOFILL
+// ═══════════════════════════════════════════════════════
+
+// NEW SMART SKU DETECTION LISTENER
+document.getElementById('input-ref').addEventListener('input', function() {
+    if (state.editingId) return; // Don't block manual editing
+    
+    const ref = this.value.trim();
+    const existing = state.inventory.find(i => i.ref === ref);
+    const addBtn = document.getElementById('main-action-btn');
+
+    if (existing && ref !== '') {
+        document.getElementById('input-set').value = existing.set || '';
+        document.getElementById('input-code').value = existing.code || '';
+        document.getElementById('input-name').value = existing.name || '';
+        document.getElementById('input-location').value = existing.loc || '';
+        document.getElementById('input-value').value = existing.unitPrice ? existing.unitPrice.toFixed(2) : '';
+        
+        addBtn.textContent = '+ Add Qty';
+        addBtn.style.backgroundColor = '#3498db'; // Turn Blue for Add
+    } else {
+        addBtn.textContent = 'Add to Stock';
+        addBtn.style.backgroundColor = '#27ae60'; // Revert to Green
+    }
+});
+
+function addFromUI() {
+    const ref  = document.getElementById('input-ref').value.trim();
+    const set  = document.getElementById('input-set').value.trim();
+    const code = document.getElementById('input-code').value.trim();
+    const name = document.getElementById('input-name').value.trim();
+    const loc  = document.getElementById('input-location').value.trim();
+    const qty  = Math.max(1, parseInt(document.getElementById('input-qty').value) || 1);
+    const unitPrice = parseFloat(document.getElementById('input-value').value) || 0;
+
+    if (!name || !set) {
+        showToast('Please specify both a Set and a Card Name/Number.', 'warning');
+        return;
+    }
+
+    const formattedName = formatCardName(name, set, code);
+
+    if (state.editingId) {
+        if (ref !== '') {
+            const collision = state.inventory.find(i => i.ref === ref && i.id !== state.editingId);
+            if (collision) {
+                showToast(`Ref / SKU "${ref}" is already assigned to another card.`, 'error');
+                return;
+            }
+        }
+        const item = state.inventory.find(i => i.id === state.editingId);
+        if (item) {
+            Object.assign(item, { ref, set, code: code.toUpperCase(), name: formattedName, loc, qty, unitPrice });
+        }
+        cancelEdit();
+        saveInventory();
+        render();
+        if (state.fileHandle) linkAndSave();
+        showToast('Card updated successfully.');
+        return;
+    }
+
+    if (ref !== '') {
+        const existing = state.inventory.find(i => i.ref === ref);
+        if (existing) {
+            // HARD DUPLICATE PROTECTION
+            // Check if the user is attempting to overwrite an existing SKU with a different card name or set
+            if (existing.name !== formattedName || existing.set !== set) {
+                showToast(`Error: SKU "${ref}" is already assigned to "${existing.name}". Use a different SKU!`, 'error', 5000);
+                return;
+            }
+
+            existing.qty += qty;
+            if (unitPrice > 0) existing.unitPrice = unitPrice;
+            existing.loc = loc;
+            
+            clearInputs();
+            saveInventory();
+            render();
+            if (state.fileHandle) linkAndSave();
+            showToast(`SKU "${ref}" found — quantity increased by ${qty}.`, 'info');
+            return;
+        }
+    }
+
+    state.inventory.unshift({
+        id: uid(), ref, set,
+        code: code.toUpperCase(),
+        name: formattedName,
+        loc, qty,
+        unitPrice: unitPrice,
+        ebayLastSold: null,
+    });
+
+    clearInputs();
+    saveInventory();
+    render();
+    if (state.fileHandle) linkAndSave();
+    showToast('Card added to inventory.');
+}
+
+function startEdit(id) {
+    const item = state.inventory.find(i => i.id === id);
+    if (!item) return;
+
+    state.editingId = id;
+
+    document.getElementById('input-ref').value      = item.ref     || '';
+    document.getElementById('input-set').value      = item.set     || '';
+    document.getElementById('input-code').value     = item.code    || '';
+    document.getElementById('input-name').value     = item.name    || '';
+    document.getElementById('input-location').value = item.loc     || '';
+    document.getElementById('input-qty').value      = item.qty     || 1;
+    document.getElementById('input-value').value    = item.unitPrice ? item.unitPrice.toFixed(2) : '';
+
+    const addBtn = document.getElementById('main-action-btn');
+    addBtn.textContent = 'Save Edit';
+    addBtn.style.backgroundColor = '#f39c12';
+    document.getElementById('cancel-edit-btn').style.display = 'inline-block';
+    document.getElementById('inventory-row').classList.add('editing-mode');
+
+    render();
+    document.getElementById('input-ref').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelEdit() {
+    state.editingId = null;
+    const addBtn = document.getElementById('main-action-btn');
+    addBtn.textContent = 'Add to Stock';
+    addBtn.style.backgroundColor = '#27ae60';
+    document.getElementById('cancel-edit-btn').style.display = 'none';
+    document.getElementById('inventory-row').classList.remove('editing-mode');
+    clearInputs();
+    render();
+}
+
+function openDeleteModal(id) {
+    const item = state.inventory.find(i => i.id === id);
+    if (!item) return;
+    document.getElementById('delete-modal-text').textContent =
+        `Remove "${item.name}" from your inventory?`;
+    document.getElementById('delete-modal-confirm').onclick = () => {
+        closeDeleteModal();
+        deleteItem(id);
+    };
+    document.getElementById('delete-modal').classList.add('visible');
+}
+
+function closeDeleteModal() {
+    document.getElementById('delete-modal').classList.remove('visible');
+}
+
+function deleteItem(id) {
+    const idx  = state.inventory.findIndex(i => i.id === id);
+    if (idx === -1) return;
+    lastDeleted = { item: { ...state.inventory[idx] }, idx };
+    state.inventory.splice(idx, 1);
+    saveInventory();
+    render();
+    showUndoBar(lastDeleted.item.name);
+    if (state.fileHandle) linkAndSave();
+}
+
+function showUndoBar(cardName) {
+    const bar = document.getElementById('undo-bar');
+    document.getElementById('undo-text').textContent = `"${cardName}" deleted.`;
+    bar.style.display = 'flex';
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(() => {
+        bar.style.display = 'none';
+        lastDeleted = null;
+    }, 6000);
+}
+
+function undoDelete() {
+    if (!lastDeleted) return;
+    state.inventory.splice(lastDeleted.idx, 0, lastDeleted.item);
+    lastDeleted = null;
+    clearTimeout(undoTimer);
+    document.getElementById('undo-bar').style.display = 'none';
+    saveInventory();
+    render();
+    showToast('Delete undone.', 'info');
+}
+
+function openWipeModal()  { document.getElementById('wipe-modal').classList.add('visible'); }
+function closeWipeModal() { document.getElementById('wipe-modal').classList.remove('visible'); }
+function confirmWipe() {
+    closeWipeModal();
+    state.inventory = [];
+    state.editingId = null;
+    cancelEdit();
+    saveInventory();
+    render();
+    showToast('All data wiped.', 'warning');
+}
+
+// ═══════════════════════════════════════════════════════
+// LIVE PRICE REFRESH
+// ═══════════════════════════════════════════════════════
+async function refreshLivePrices() {
+    const englishItems = state.inventory.filter(i => i.set && i.set.includes('(EN:'));
+    if (englishItems.length === 0) {
+        showToast('No English set cards found to price.', 'warning');
+        return;
+    }
+
+    abortRefresh = false;
+    document.getElementById('loading-overlay').classList.add('visible');
+    document.getElementById('abort-btn').style.display = 'inline-block';
+    document.getElementById('refresh-btn').disabled = true;
+
+    const setMap = new Map();
+    for (const item of englishItems) {
+        if (!setMap.has(item.set)) setMap.set(item.set, []);
+        setMap.get(item.set).push(item);
+    }
+
+    const sets = [...setMap.keys()];
+    let updatedCount = 0;
+
+    for (let i = 0; i < sets.length; i++) {
+        if (abortRefresh) break;
+
+        const fullSetName = sets[i];
+        const baseName    = fullSetName.split(' (')[0];
+
+        document.getElementById('loading-text').textContent     = `Scanning: ${baseName}...`;
+        document.getElementById('loading-progress').textContent = `Set ${i + 1} of ${sets.length}`;
+
+        try {
+            const response = await fetch(
+                `https://api.pokemontcg.io/v2/cards?q=set.name:"${encodeURIComponent(baseName)}"&pageSize=300&select=number,tcgplayer`
+            );
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+
+            if (data.data?.length > 0) {
+                const priceMap = new Map(data.data.map(c => [String(c.number), c.tcgplayer?.prices]));
+
+                for (const item of setMap.get(fullSetName)) {
+                    const rawNum    = item.name.split('/')[0].replace(/^0+/, '').trim();
+                    const prices    = priceMap.get(rawNum);
+                    const unitPrice = getBestMarketPrice(prices);
+
+                    if (unitPrice > 0) {
+                        item.unitPrice = unitPrice;
+                        updatedCount++;
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(`Price fetch failed for ${baseName}:`, err);
+        }
+
+        if (i < sets.length - 1) await sleep(RATE_LIMIT_MS);
+    }
+
+    saveInventory();
+    render();
+    document.getElementById('loading-overlay').classList.remove('visible');
+    document.getElementById('abort-btn').style.display = 'none';
+    document.getElementById('refresh-btn').disabled = false;
+
+    if (!abortRefresh) {
+        showToast(`Prices updated for ${updatedCount} card${updatedCount !== 1 ? 's' : ''}. Click 'Link & Save' to push to CSV.`, 'success', 5000);
+    } else {
+        showToast('Price refresh aborted.', 'warning');
+    }
+}
+
+function abortProcess() {
+    abortRefresh = true;
+    document.getElementById('loading-overlay').classList.remove('visible');
+    document.getElementById('abort-btn').style.display = 'none';
+    document.getElementById('refresh-btn').disabled = false;
+}
+
+// ═══════════════════════════════════════════════════════
+// SORT & FILTER
+// ═══════════════════════════════════════════════════════
+function onSortChange() {
+    state.sort = document.getElementById('sort-dropdown').value;
+    render();
+}
+
+const debouncedRender = debounce(render, 150);
+
+function bindFilters() {
+    const filterIds = ['filter-ref','filter-code','filter-name','filter-loc','filter-qty','filter-unit','filter-total'];
+    filterIds.forEach(id => {
+        document.getElementById(id).addEventListener('input', function() {
+            const key = id.replace('filter-', '');
+            state.filters[key === 'unit' ? 'unit' : key] = this.value.toLowerCase();
+            debouncedRender();
+        });
+    });
+    document.getElementById('filter-set').addEventListener('change', function() {
+        state.filters.set = this.value;
+        render();
+    });
+}
+
+function clearFilters() {
+    state.filters = { ref:'', set:'', code:'', name:'', loc:'', qty:'', unit:'', total:'' };
+    state.sort = 'default';
+    document.getElementById('filter-ref').value   = '';
+    document.getElementById('filter-set').value   = '';
+    document.getElementById('filter-code').value  = '';
+    document.getElementById('filter-name').value  = '';
+    document.getElementById('filter-loc').value   = '';
+    document.getElementById('filter-qty').value   = '';
+    document.getElementById('filter-unit').value  = '';
+    document.getElementById('filter-total').value = '';
+    document.getElementById('sort-dropdown').value = 'default';
+    render();
+}
+
+// ═══════════════════════════════════════════════════════
+// SET / CARD DATALISTS WITH SMART SEARCH
+// ═══════════════════════════════════════════════════════
+function populateSetDatalist() {
+    const setDatalist       = document.getElementById('set-options');
+    const filterSetDropdown = document.getElementById('filter-set');
+    const fragment1         = document.createDocumentFragment();
+    const fragment2         = document.createDocumentFragment();
+
+    const sortedDB = DATABASE.sort((a,b) => a.text.localeCompare(b.text));
+
+    for (const item of sortedDB) {
+        const opt1 = document.createElement('option');
+        opt1.value = item.text;
+        fragment1.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = item.text;
+        opt2.textContent = item.text;
+        fragment2.appendChild(opt2);
+    }
+    setDatalist.appendChild(fragment1);
+    filterSetDropdown.appendChild(fragment2);
+}
+
+document.getElementById('input-set').addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const match = findSet(this.value);
+    if (match) {
+        this.value = match.text;
+        this.dispatchEvent(new Event('input'));
+        document.getElementById('input-name').focus();
+    }
+});
+
+document.getElementById('input-set').addEventListener('input', function() {
+    const matched = findSet(this.value);
+    const cardDatalist = document.getElementById('card-options');
+    const nameInput    = document.getElementById('input-name');
+
+    if (matched) {
+        document.getElementById('input-code').value = matched.id;
+
+        if (PRELOADED_CARDS[matched.id]) {
+            cardDatalist.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            PRELOADED_CARDS[matched.id].forEach(cardStr => {
+                const opt = document.createElement('option');
+                opt.value = cardStr;
+                frag.appendChild(opt);
+            });
+            cardDatalist.appendChild(frag);
+            nameInput.placeholder = '2. Type No. or Name...';
+            return; 
+        }
+
+        cardDatalist.innerHTML = '';
+        const frag = document.createDocumentFragment();
+        const totalPadded = padToThreeJS(matched.total, matched.total).split('/')[0];
+        for (let i = 1; i <= MAX_CARD_NUM; i++) {
+            const opt = document.createElement('option');
+            opt.value = `${padToThreeJS(String(i), matched.total).split('/')[0]}/${totalPadded}`;
+            frag.appendChild(opt);
+        }
+        cardDatalist.appendChild(frag);
+        nameInput.placeholder = '2. Type No. or Name...';
+
+        const baseName = matched.text.split(' (')[0].replace('Pokémon Card 151', '151').replace('Pokémon 151', '151');
+        
+        fetch(`https://api.pokemontcg.io/v2/cards?q=set.name:"${encodeURIComponent(baseName)}"&pageSize=300&select=name,number,set`)
+            .then(r => r.json())
+            .then(d => {
+                if (!d.data?.length) return;
+                cardDatalist.innerHTML = '';
+                const apiFragment = document.createDocumentFragment();
+                d.data
+                    .sort((a, b) => String(a.number).localeCompare(String(b.number), undefined, { numeric: true }))
+                    .forEach(card => {
+                        const total = card.set?.printedTotal ?? matched.total;
+                        const paddedNum = padToThreeJS(card.number, total).split('/')[0];
+                        const paddedTotal = padToThreeJS(total, total).split('/')[0];
+                        const num   = `${paddedNum}/${paddedTotal}`;
+                        const opt = document.createElement('option');
+                        opt.value = `${num} - ${card.name}`;
+                        apiFragment.appendChild(opt);
+                    });
+                cardDatalist.appendChild(apiFragment);
+            })
+            .catch(() => {});
+    } else {
+        document.getElementById('input-code').value = '';
+        cardDatalist.innerHTML = '';
+        nameInput.placeholder = '2. Type No. or Name...';
+    }
+});
+
+document.getElementById('input-set').addEventListener('blur', function() {
+    const match = findSet(this.value);
+    if (match) {
+        this.value = match.text;
+        document.getElementById('input-code').value = match.id;
+    }
+});
+
+['input-location', 'input-qty', 'input-value'].forEach(id => {
+    document.getElementById(id).addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); addFromUI(); }
+    });
+});
+
+// ═══════════════════════════════════════════════════════
+// CSV EXPORT
+// ═══════════════════════════════════════════════════════
+function inventoryToCSVRows() {
+    return state.inventory.map(item =>
+        [item.ref, item.set, item.code, item.name, item.loc, item.qty,
+         (item.unitPrice || 0).toFixed(2), getLineTotal(item).toFixed(2),
+         item.ebayLastSold || '']
+        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',')
+    );
+}
+
+function downloadCSV() {
+    if (state.inventory.length === 0) { showToast('Nothing to export.', 'warning'); return; }
+    const header = '"Ref / SKU","Set","Code","No. & Card Name","Location","Qty","Unit Val (£)","Total Val (£)","eBay Last Sold"';
+    const rows   = [header, ...inventoryToCSVRows()];
+    triggerDownload(rows.join('\n'), 'Pokemon_Inventory_Master.csv');
+    showToast('Master CSV downloaded.');
+}
+
+function downloadEbayAudit() {
+    if (state.inventory.length === 0) { showToast('Nothing to export.', 'warning'); return; }
+    const header = '"Custom Label (SKU)","Card Name","Set","Quantity"';
+    const rows = state.inventory.map(item =>
+        [item.ref, item.name, item.set, item.qty]
+        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',')
+    );
+    triggerDownload([header, ...rows].join('\n'), 'eBay_Audit_List.csv');
+    showToast('eBay audit CSV downloaded.');
+}
+
+function triggerDownload(content, filename) {
+    const link = document.createElement('a');
+    link.href  = URL.createObjectURL(new Blob([content], { type: 'text/csv' }));
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
+// ═══════════════════════════════════════════════════════
+// LINK & SAVE (File System Access API)
+// ═══════════════════════════════════════════════════════
+async function linkAndSave() {
+    try {
+        if (!state.fileHandle) {
+            [state.fileHandle] = await window.showOpenFilePicker({
+                types: [{ description: 'CSV File', accept: { 'text/csv': ['.csv'] } }],
+            });
+        }
+        const header  = '"Ref / SKU","Set","Code","No. & Card Name","Location","Qty","Unit Val (£)","Total Val (£)","eBay Last Sold"';
+        const content = [header, ...inventoryToCSVRows()].join('\n');
+        const writable = await state.fileHandle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        showToast('Saved to local file.', 'success');
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            console.error('Auto-save error:', err);
+            showToast('Save to local file failed.', 'error');
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+// CSV UPLOAD
+// ═══════════════════════════════════════════════════════
+document.getElementById('csv-file-input').addEventListener('change', function(e) {
+    if (!e.target.files[0]) return;
+
+    document.getElementById('loading-text').textContent     = 'Processing CSV...';
+    document.getElementById('loading-progress').textContent = 'Please wait.';
+    document.getElementById('abort-btn').style.display = 'none';
+    document.getElementById('loading-overlay').classList.add('visible');
+
+    Papa.parse(e.target.files[0], {
+        header:        true,
+        skipEmptyLines: true,
+        worker:        true,
+        complete(results) {
+            let imported = 0, skipped = 0;
+
+            for (const row of results.data) {
+                const name = row['No. & Card Name'] || row['Card Name & No.'] || '';
+                const set  = row['Set'] || '';
+                if (!name && !set) { skipped++; continue; }
+
+                const uPrice = parseFloat(row['Unit Val (£)'] || row['Unit Price'] || '0') || 0;
+                const tPrice = parseFloat(row['Total Val (£)'] || row['Total Price'] || '0') || 0;
+
+                const qty   = parseInt(row['Qty'] || '1') || 1;
+                const unitP = uPrice > 0 ? uPrice : (qty > 0 ? tPrice / qty : 0);
+
+                state.inventory.push({
+                    id:           uid(),
+                    ref:          row['Ref / SKU']  || '',
+                    set,
+                    code:         (row['Code'] || '').toUpperCase(),
+                    name,
+                    loc:          row['Location'] || '',
+                    qty,
+                    unitPrice:    unitP,
+                    ebayLastSold: row['eBay Last Sold'] || null,
+                });
+                imported++;
+            }
+
+            saveInventory();
+            render();
+            document.getElementById('loading-overlay').classList.remove('visible');
+            const msg = skipped > 0
+                ? `Imported ${imported} cards. ${skipped} empty row(s) skipped.`
+                : `Successfully imported ${imported} card${imported !== 1 ? 's' : ''}.`;
+            setTimeout(() => showToast(msg, 'success', 5000), 100);
+        },
+        error(err) {
+            document.getElementById('loading-overlay').classList.remove('visible');
+            showToast(`CSV parse error: ${err.message}`, 'error', 6000);
+        }
+    });
+    e.target.value = '';
+});
+
+// ═══════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════
+function clearInputs() {
+    ['input-ref','input-set','input-code','input-name','input-location', 'input-value'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = '';
+    });
+    document.getElementById('input-qty').value = 1;
+    document.getElementById('card-options').innerHTML = '';
+    
+    // Reset Add button back to default green
+    const addBtn = document.getElementById('main-action-btn');
+    addBtn.textContent = 'Add to Stock';
+    addBtn.style.backgroundColor = '#27ae60';
+    
+    document.getElementById('input-ref').focus();
+}
+
+// ═══════════════════════════════════════════════════════
+// EBAY LAST SOLD LOOKUP
+// ═══════════════════════════════════════════════════════
+function lookupEbayLastSold(id) {
+    const item = state.inventory.find(i => i.id === id);
+    if (!item) return;
+
+    const cardNum = item.name.match(/^(\d+\/\d+)/)?.[1] || '';
+    const nameWithoutNum = item.name.replace(/^\d+\/\d+\s*[-–]?\s*/, '').trim();
+    const query = [nameWithoutNum, cardNum].filter(Boolean).join(' ').trim();
+
+    const ebayUrl = `https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Sold=1&LH_Complete=1&_sop=13&LH_PrefLoc=1&_fcid=3`;
+
+    const panel = document.getElementById('ebay-info-panel');
+    if (!panel.classList.contains('visible')) {
+        panel.classList.add('visible');
+    }
+
+    window.open(ebayUrl, '_blank', 'noopener,noreferrer');
+
+    setTimeout(() => {
+        showPriceEntryToast(id, nameWithoutNum);
+    }, 600);
+}
+
+function showPriceEntryToast(id, cardName) {
+    const container = document.getElementById('toast-container');
+
+    const existing = document.getElementById('price-entry-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'price-entry-toast';
+    toast.className = 'toast toast-info';
+    toast.style.cssText = 'flex-direction:column;align-items:flex-start;gap:8px;max-width:300px;';
+
+    const label = document.createElement('div');
+    label.style.fontWeight = 'bold';
+    label.textContent = `Enter last sold price for:`;
+    const subLabel = document.createElement('div');
+    subLabel.style.cssText = 'color:#aaa;font-size:12px;margin-top:-4px;';
+    subLabel.textContent = cardName;
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;width:100%;';
+
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.placeholder = '£ price';
+    input.step = '0.01';
+    input.min = '0';
+    input.style.cssText = 'flex:1;height:32px;font-size:13px;background:#3a3a3a;border:1px solid #555;color:#fff;border-radius:4px;padding:0 8px;';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Save';
+    saveBtn.style.cssText = 'background:#e8a400;color:#1e1e1e;border:none;padding:0 12px;height:32px;border-radius:4px;cursor:pointer;font-weight:bold;font-size:13px;';
+
+    const dismissBtn = document.createElement('button');
+    dismissBtn.textContent = '✕';
+    dismissBtn.style.cssText = 'background:#555;color:#fff;border:none;padding:0 10px;height:32px;border-radius:4px;cursor:pointer;font-size:13px;';
+
+    const savePrice = () => {
+        const val = parseFloat(input.value);
+        if (isNaN(val) || val < 0) {
+            input.style.borderColor = '#e74c3c';
+            return;
+        }
+        const item = state.inventory.find(i => i.id === id);
+        if (item) {
+            item.ebayLastSold = `£${val.toFixed(2)}`;
+            item.unitPrice = val; 
+            saveInventory();
+            render();
+        }
+        toast.remove();
+        showToast(`eBay last sold saved for ${cardName}.`, 'success');
+    };
+
+    input.addEventListener('keypress', e => { if (e.key === 'Enter') savePrice(); });
+    saveBtn.addEventListener('click', savePrice);
+    dismissBtn.addEventListener('click', () => toast.remove());
+
+    row.append(input, saveBtn, dismissBtn);
+    toast.append(label, subLabel, row);
+    container.appendChild(toast);
+    input.focus();
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    if (DATABASE.length > 0) {
+        populateSetDatalist();
+    }
+    bindFilters();
+    loadInventory();
+    render();
+});
+</script>
+
 <style>
 /* ===== MOBILE-ONLY OVERRIDES — desktop styles above are untouched ===== */
 @media (max-width: 768px) {
@@ -145,3 +1731,6 @@
   labelRows();
 })();
 </script>
+
+</body>
+</html>
