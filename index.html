@@ -1583,5 +1583,121 @@ document.addEventListener('DOMContentLoaded', () => {
     render();
 });
 </script>
+
+<style>
+/* ============================================================
+   MOBILE-ONLY OVERRIDES — desktop styles above are UNTOUCHED
+   Everything here only activates on screens <= 768px wide
+   ============================================================ */
+@media (max-width: 768px) {
+
+  input, select, button {
+    font-size: 16px !important; /* stops iOS auto-zoom on tap */
+  }
+
+  body { padding: 12px; }
+  .container { padding: 14px; }
+
+  .header-section { gap: 10px; }
+  .portfolio-value { font-size: 18px; width: 100%; text-align: center; }
+
+  .action-buttons { flex-direction: column; }
+  .action-buttons .btn { width: 100% !important; }
+
+  .inventory-row { flex-direction: column; align-items: stretch; }
+  .inventory-row input,
+  .inventory-row select {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .inventory-row .btn-add,
+  .inventory-row .btn-cancel { width: 100% !important; }
+
+  .filter-section { flex-direction: column; align-items: stretch; }
+  .filter-section select,
+  .filter-input {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: none !important;
+  }
+  .filter-section .btn-clear-filters { width: 100% !important; }
+
+  .results-bar { flex-direction: column; align-items: flex-start; gap: 4px; }
+
+  /* Table becomes stacked cards instead of a horizontal-scroll table */
+  .table-wrap { overflow-x: visible; }
+  #inventory-table { min-width: 0 !important; }
+  #inventory-table thead { display: none; }
+  #inventory-table, #inventory-table tbody, #inventory-table tr, #inventory-table td {
+    display: block;
+    width: 100%;
+  }
+  #inventory-table tr {
+    background: #252525;
+    border: 1px solid #333;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+  }
+  #inventory-table td {
+    border-bottom: 1px solid #333;
+    padding: 8px 4px;
+    white-space: normal;
+    text-align: left;
+    position: relative;
+  }
+  #inventory-table td:last-child { border-bottom: none; }
+  #inventory-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 2px;
+  }
+
+  .modal { width: 88% !important; padding: 20px !important; }
+
+  #toast-container { left: 12px; right: 12px; bottom: 16px; }
+  .toast { max-width: 100% !important; }
+
+  #undo-bar { left: 12px; right: 12px; transform: none; width: auto; }
+}
+</style>
+
+<script>
+// ============================================================
+// MOBILE ROW LABELS — adds data-label to each <td> so the CSS
+// above can show column names on stacked mobile cards.
+// Safe no-op visually on desktop (rule only fires <=768px).
+// ============================================================
+(function () {
+  function labelRows() {
+    var table = document.getElementById('inventory-table');
+    if (!table) return;
+    var headers = Array.prototype.map.call(
+      table.querySelectorAll('thead th'),
+      function (th) { return th.textContent.trim(); }
+    );
+    Array.prototype.forEach.call(table.querySelectorAll('tbody tr'), function (row) {
+      Array.prototype.forEach.call(row.children, function (cell, i) {
+        if (headers[i]) cell.setAttribute('data-label', headers[i]);
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    labelRows();
+    var target = document.getElementById('inventory-table');
+    if (target) {
+      var tbody = target.querySelector('tbody') || target;
+      var observer = new MutationObserver(labelRows);
+      observer.observe(tbody, { childList: true, subtree: true });
+    }
+  });
+})();
+</script>
+<!-- ============ END MOBILE-ONLY OVERRIDES ============ -->
+
 </body>
 </html>
